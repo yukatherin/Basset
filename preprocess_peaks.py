@@ -97,7 +97,7 @@ def main():
                     a.append('')
                 a[5] = strand
                 a[6] = str(sample_dbi[bi])
-                print >> chrom_outs[chrom_key], '\t'.join(a)
+                print >> chrom_outs[chrom_key], '\t'.join(a[:7])
 
         peak_bed_in.close()
 
@@ -230,12 +230,14 @@ def merge_peaks(peaks, peak_size):
     '''
     # determine peak midpoints
     peak_mids = []
+    peak_weights = []
     for p in peaks:
         mid = (p.start + p.end - 1) / 2.0
         peak_mids.append(mid)
+        peak_weights.append(len(p.acc))
 
     # take the mean
-    merge_mid = int(0.5+np.mean(peak_mids))
+    merge_mid = int(0.5+np.average(peak_mids, weights=peak_weights))
 
     # extend to the full size
     merge_start = merge_mid - peak_size/2
