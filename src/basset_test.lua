@@ -1,14 +1,15 @@
 #!/usr/bin/env th
 
+require 'lfs'
+
+-- I'm going to need to ditch these if we want users to be able
+-- to study a GPU-learned model on the CPU.
 require 'cutorch'
 require 'cunn'
-require 'lfs'
 
 require 'batcher'
 require 'convnet'
 require 'convnet_io'
-
-local access_token = "2b0784a1-996d-4aed-8f2f-058b8325aa6a"
 
 ----------------------------------------------------------------
 -- parse arguments
@@ -59,14 +60,14 @@ local avg_auc = torch.mean(AUCs)
 -- cd to output dir
 local rs = lfs.chdir(opt.out_dir) and true or false
 if not rs then
-	lfs.mkdir(opt.out_dir)
-	lfs.chdir(opt.out_dir)
+    lfs.mkdir(opt.out_dir)
+    lfs.chdir(opt.out_dir)
 end
 
 -- print AUCs
 local auc_out = io.open('aucs.txt', 'w')
 for i=1,(#AUCs)[1] do
-	auc_out:write(string.format("%-3d   %.4f\n", i, AUCs[i]))
+    auc_out:write(string.format("%-3d   %.4f\n", i, AUCs[i]))
 end
 auc_out:close()
 
@@ -75,10 +76,10 @@ print(string.format("loss  %.3f", loss))
 
 -- print ROC points
 for yi=1,#roc_points do
-	local roc_file = string.format('roc%d.txt', yi)
-	local roc_out = io.open(roc_file, 'w')
-	for pi = 1,(#(roc_points[yi]))[1] do
-		roc_out:write(string.format("%f\t%f\n", roc_points[yi][pi][1], roc_points[yi][pi][2]))
-	end
-	roc_out:close()
+    local roc_file = string.format('roc%d.txt', yi)
+    local roc_out = io.open(roc_file, 'w')
+    for pi = 1,(#(roc_points[yi]))[1] do
+        roc_out:write(string.format("%f\t%f\n", roc_points[yi][pi][1], roc_points[yi][pi][2]))
+    end
+    roc_out:close()
 end

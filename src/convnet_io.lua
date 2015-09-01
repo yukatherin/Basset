@@ -2,11 +2,11 @@ require 'hdf5'
 require 'torch'
 
 -------------------------------------------------------------------------
--- load_test
+-- load_train
 --
 -- Load the datasets labeled 'train' and 'valid'
 --------------------------------------------------------------------------
-function load_data(hdf5_file, add_rc)
+function load_train(hdf5_file, add_rc)
     local myFile = hdf5.open(hdf5_file, 'r')
 
     local train_scores = tensor_raw(myFile:read('train_out'):all())

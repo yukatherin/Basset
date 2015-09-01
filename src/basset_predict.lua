@@ -1,12 +1,12 @@
 #!/usr/bin/env th
 
+-- I'm going to need to ditch these if we want users to be able
+-- to study a GPU-learned model on the CPU.
 require 'cutorch'
 require 'cunn'
 
 require 'convnet'
 require 'convnet_io'
-
-local access_token = "2b0784a1-996d-4aed-8f2f-058b8325aa6a"
 
 ----------------------------------------------------------------
 -- parse arguments
