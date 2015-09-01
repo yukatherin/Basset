@@ -4,6 +4,7 @@ import gzip
 import os
 import subprocess
 
+import h5py
 import numpy as np
 
 ################################################################################
@@ -23,10 +24,10 @@ def main():
     parser = OptionParser(usage)
     parser.add_option('-a', dest='db_acc_file', help='Existing database of accessibility scores')
     parser.add_option('-b', dest='db_bed', help='Existing database of BED peaks.')
-    parser.add_option('-d', dest='merge_dist', default=0, help='Maximum distance between features allowed for features to be merged. [Default: %default]')
+    parser.add_option('-m', dest='merge_overlap', default=0, help='Overlap required (after extension to peak_size) to merge features. Can be negative. [Default: %default]')
     parser.add_option('-o', dest='out_prefix', default='peaks', help='Output file prefix [Default: %default]')
     parser.add_option('-s', dest='peak_size', default=600, type='int', help='Peak extension size [Default: %default]')
-    # parser.add_option('-y', dest='use_y', default=False, action='store_true', help='Use Y chromsosome peaks [Default: %default]')
+    parser.add_option('-y', dest='ignore_y', default=False, action='store_true', help='Ignore Y chromsosome peaks [Default: %default]')
     (options,args) = parser.parse_args()
 
     if len(args) != 1:
@@ -105,6 +106,15 @@ def main():
     for chrom_key in chrom_outs:
         chrom_outs[chrom_key].close()
 
+    # ignore Y
+    if options.ignore_y:
+        if ('chrY','+') in chrom_files:
+            os.remove(chrom_files[('chrY','+')])
+            os.remove(chrom_files[('chrY','-')])
+            del chrom_files[('chrY','+')]
+            del chrom_files[('chrY','-')]
+            del chrom_files[('chrY','+')]
+            del chrom_files[('chrY','-')]
 
     #################################################################
     # sort chromosome-specific files
@@ -146,7 +156,7 @@ def main():
                 # operate on exiting open peak
 
                 # if beyond existing open peak
-                if open_end + options.merge_dist < peak_start:
+                if open_end - options.merge_overlap <= peak_start:
                     # close open peak
                     mpeak = merge_peaks(open_peaks, options.peak_size)
 
