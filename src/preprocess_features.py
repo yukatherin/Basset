@@ -3,15 +3,16 @@ from optparse import OptionParser
 import gzip
 import os
 import subprocess
+import sys
 
 import h5py
 import numpy as np
 
 ################################################################################
-# preprocess_peaks.py
+# preprocess_features.py
 #
-# Preprocess a set of peak BED files for Basset analysis, potentially adding
-# them to an existing database of peaks, specified as a BED file with the
+# Preprocess a set of feature BED files for Basset analysis, potentially adding
+# them to an existing database of features, specified as a BED file with the
 # sample accessibilities comma-separated in column 4 and a full accessibility
 # table file.
 ################################################################################
@@ -24,7 +25,8 @@ def main():
     parser = OptionParser(usage)
     parser.add_option('-a', dest='db_acc_file', help='Existing database of accessibility scores')
     parser.add_option('-b', dest='db_bed', help='Existing database of BED peaks.')
-    parser.add_option('-m', dest='merge_overlap', default=0, help='Overlap required (after extension to peak_size) to merge features. Can be negative. [Default: %default]')
+    parser.add_option('-c', dest='chrom_lengths_file', help='Table of chromosome lengths')
+    parser.add_option('-m', dest='merge_dist', default=0, type='int', help='Distance under which to merge features. Can be negative. [Default: %default]')
     parser.add_option('-o', dest='out_prefix', default='peaks', help='Output file prefix [Default: %default]')
     parser.add_option('-s', dest='peak_size', default=600, type='int', help='Peak extension size [Default: %default]')
     parser.add_option('-y', dest='ignore_y', default=False, action='store_true', help='Ignore Y chromsosome peaks [Default: %default]')
@@ -55,6 +57,15 @@ def main():
     	db_samples.append(a[0])
     	sample_beds.append(a[1])
 
+    # read in chromosome lengths
+    chrom_lengths = {}
+    if options.chrom_lengths_file:
+        chrom_lengths = {}
+        for line in open(options.chrom_lengths_file):
+            a = line.split()
+            chrom_lengths[a[0]] = int(a[1])
+    else:
+        print >> sys.stderr, 'Chromosome lengths not given. Regions near ends may be incorrect.'
 
     #################################################################
     # print peaks to chromosome-specific files
@@ -108,13 +119,11 @@ def main():
 
     # ignore Y
     if options.ignore_y:
-        if ('chrY','+') in chrom_files:
-            os.remove(chrom_files[('chrY','+')])
-            os.remove(chrom_files[('chrY','-')])
-            del chrom_files[('chrY','+')]
-            del chrom_files[('chrY','-')]
-            del chrom_files[('chrY','+')]
-            del chrom_files[('chrY','-')]
+        for orient in '+-':
+            chrom_key = ('chrY',orient)
+            if chrom_key in chrom_files:
+                os.remove(chrom_files[chrom_key])
+                del chrom_files[chrom_key]
 
     #################################################################
     # sort chromosome-specific files
@@ -156,9 +165,9 @@ def main():
                 # operate on exiting open peak
 
                 # if beyond existing open peak
-                if open_end - options.merge_overlap <= peak_start:
+                if open_end + options.merge_dist <= peak_start:
                     # close open peak
-                    mpeak = merge_peaks(open_peaks, options.peak_size)
+                    mpeak = merge_peaks(open_peaks, options.peak_size, chrom_lengths.get(chrom,None))
 
                     # print to file
                     print >> final_bed_out, mpeak.bed_str(chrom, strand)
@@ -174,7 +183,7 @@ def main():
 
         if len(open_peaks) > 0:
             # close open peak
-            mpeak = merge_peaks(open_peaks, options.peak_size)
+            mpeak = merge_peaks(open_peaks, options.peak_size, chrom_lengths.get(chrom,None))
 
             # print to file
             print >> final_bed_out, mpeak.bed_str(chrom, strand)
@@ -199,7 +208,7 @@ def main():
     for line in open('%s.bed' % options.out_prefix):
         a = line.split('\t')
         # index peak
-        peak_id = '%s:%s-%s:%s' % (a[0], a[1], a[2], a[5])
+        peak_id = '%s:%s-%s(%s)' % (a[0], a[1], a[2], a[5])
 
         # construct full accessibility vector
         peak_acc = [0]*len(db_samples)
@@ -228,12 +237,13 @@ def acc_set(acc_cs):
     return set([int(ai) for ai in ai_strs])
 
 
-def merge_peaks(peaks, peak_size):
-    ''' Merge the Peaks in the given list.
+def merge_peaks(peaks, peak_size, chrom_len):
+    ''' Merge and grow the Peaks in the given list.
 
     Attributes:
         peaks (list[Peak]) : list of Peaks
         peak_size (int) : desired peak extension size
+        chrom_len (int) : chromsome length
 
     Returns:
         Peak representing the merger
@@ -250,8 +260,11 @@ def merge_peaks(peaks, peak_size):
     merge_mid = int(0.5+np.average(peak_mids, weights=peak_weights))
 
     # extend to the full size
-    merge_start = merge_mid - peak_size/2
-    merge_end = merge_mid + peak_size/2
+    merge_start = max(0, merge_mid - peak_size/2)
+    merge_end = merge_start + peak_size
+    if chrom_len and merge_end > chrom_len:
+        merge_end = chrom_len
+        merge_start = merge_end - peak_size
 
     # merge accessibilities
     merge_acc = set()
@@ -259,6 +272,25 @@ def merge_peaks(peaks, peak_size):
         merge_acc |= p.acc
 
     return Peak(merge_start, merge_end, merge_acc)
+
+
+def merge_peaks_greedy(peaks, peak_size, chrom_len):
+    '''
+    Another approach to this problem would be to use an
+    extension size and a maximum overlap.
+
+    Then in the primary loop above, we extend every peak
+    immediately and cluster overlaps.
+
+    When there are no more overlaps, we parse that region
+    by greedily traversing the list for the shortest
+    distance and merging the two.
+
+    This is O(N^2), so I might need a better solution for
+    bigger clusters. Like do an initial pass and immediately
+    merge any two peaks closer than X bp.
+    '''
+    pass
 
 
 class Peak:
