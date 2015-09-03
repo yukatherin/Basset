@@ -21,12 +21,8 @@ cmd:argument('data_file')
 cmd:argument('out_file')
 cmd:text()
 cmd:text('Options:')
-cmd:option('-seed', 1, 'RNG seed')
 cmd:text()
 opt = cmd:parse(arg)
-
--- fix seed
-torch.manualSeed(opt.seed)
 
 ----------------------------------------------------------------
 -- load data
