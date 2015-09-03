@@ -10,11 +10,27 @@ Basset provides researchers with tools to:
 ### Installation
 
 Requirements:
+- BEDtools
+- WebLogo
 - Torch7
-- numpy
-- matplotlib
-- seaborn
-- pandas
+  - hdf5
+  - nn
+  - dpnn
+  - inn
+  - optim
+  - cutorch
+  - cunn
+  - metrics
+  - lfs
+- Python
+  - numpy
+  - matplotlib
+  - seaborn
+  - pandas
+  - h5py
+  - sklearn (only for preprocessing.scale)
+  - pysam (only for fasta)
+
 
 -------------------------------------------------------------------------------------------------------------------
 ### Documentation
