@@ -344,3 +344,33 @@ def one_hot_set(seq_vec, pos, nt):
         seq_vec[c0+pos] = 0.25
         seq_vec[g0+pos] = 0.25
         seq_vec[t0+pos] = 0.25
+
+
+def vecs2dna(seq_vecs):
+    ''' one_hot_set
+
+    Input:
+        seq_vecs:
+    Output:
+        seqs
+    '''
+    # possibly reshape
+    if len(seq_vecs.shape) == 2:
+        seq_vecs = np.reshape(seq_vecs, (seq_vecs.shape[0], 4, -1))
+
+    seqs = []
+    for i in range(seq_vecs.shape[0]):
+        seq_list = ['']*seq_vecs.shape[2]
+        for j in range(seq_vecs.shape[2]):
+            if seq_vecs[i,0,j] == 1:
+                seq_list[j] = 'A'
+            elif seq_vecs[i,1,j] == 1:
+                seq_list[j] = 'C'
+            elif seq_vecs[i,2,j] == 1:
+                seq_list[j] = 'G'
+            elif seq_vecs[i,3,j] == 1:
+                seq_list[j] = 'T'
+            else:
+                seq_list[j] = 'N'
+        seqs.append(''.join(seq_list))
+    return seqs
