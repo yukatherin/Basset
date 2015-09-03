@@ -65,7 +65,7 @@ def main():
     except KeyError:
         # TEMP TEMP TEMP
         # target_names = [str(x) for x in range(125)]
-        target_names = [line.split()[1] for line in open('../../data/cell_activity.txt')]
+        target_names = [line.split()[1] for line in open('../data/cell_activity.txt')]
     test_hdf5_in.close()
 
     # convert to letters
@@ -83,21 +83,18 @@ def main():
     num_seqs = filter_outs.shape[0]
     num_targets = len(target_names)
 
-    # TEMP TMEP TEMP
     filter_names = np.array(['f%d'%fi for fi in range(num_filters)])
 
 
     #################################################################
     # global filter plots
     #################################################################
-    '''
     # plot filter-sequence heatmap
     plot_filter_seq_heat(filter_outs, '%s/filter_seqs.pdf'%options.out_dir)
 
     # plot filter-segment heatmap
     plot_filter_seg_heat(filter_outs)
     plot_filter_seg_heat(filter_outs, whiten=False)
-    '''
 
     # plot filter-target correlation heatmap
     plot_target_corr(filter_outs, seq_targets, filter_names, target_names, '%s/filter_target_cors.pdf'%options.out_dir)
@@ -105,19 +102,19 @@ def main():
     #################################################################
     # individual filter plots
     #################################################################
-    stats_out = open('filter_stats.txt', 'w')
+    stats_out = open('%s/filter_stats.txt'%options.out_dir, 'w')
 
-    meme_out = open('filters_meme.txt', 'w')
+    meme_out = open('%s/filters_meme.txt'%options.out_dir, 'w')
     meme_intro(meme_out, seqs)
 
     for f in range(num_filters):
         print 'Filter %d' % f
 
         # plot filter parameters as a heatmap
-        plot_filter_heat(filter_weights[f,:,:], 'filter%d_heat.pdf' % f)
+        plot_filter_heat(filter_weights[f,:,:], '%s/filter%d_heat.pdf' % (options.out_dir,f))
 
         # print filter parameters
-        params_out = open('filter%d.txt' % f, 'w')
+        params_out = open('%s/filter%d.txt' % (options.out_dir,f), 'w')
     	for n in range(4):
     		print >> params_out, '  '.join(['%6.3f' % v for v in filter_weights[f,n,:]])
     	print >> params_out, ''
@@ -127,19 +124,19 @@ def main():
         print >> stats_out, '%2d %s' % (f, filter_motif(filter_weights[f,:,:]))
 
         # plot density of filter output scores
-        plot_score_density(np.ravel(filter_outs[:,f,:]), stats_out, 'filter%d_dens.pdf' % f)
+        plot_score_density(np.ravel(filter_outs[:,f,:]), stats_out, '%s/filter%d_dens.pdf' % (options.out_dir,f))
 
         # plot weblogo of high scoring outputs
-        plot_filter_logo(filter_outs[:,f,:], filter_size, seqs, 'filter%d_logo'%f, maxpct_t=0.5)
+        plot_filter_logo(filter_outs[:,f,:], filter_size, seqs, '%s/filter%d_logo'%(options.out_dir,f), maxpct_t=0.5)
 
         # add to the meme motif file
-        meme_add(meme_out, 'filter%d_logo.fa'%f, f)
+        meme_add(meme_out, '%s/filter%d_logo.fa'%(options.out_dir,f), f)
 
     stats_out.close()
     meme_out.close()
 
     # run tomtom
-    subprocess.call('tomtom -thresh 0.2 -oc tomtom -png filters_meme.txt %s' % options.meme_db, shell=True)
+    subprocess.call('tomtom -thresh 0.2 -oc %s/tomtom -png %s/filters_meme.txt %s' % (options.out_dir,options_out_dir,options.meme_db), shell=True)
 
 
 ################################################################################
