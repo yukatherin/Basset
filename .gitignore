@@ -1,4 +1,5 @@
 *~
+*.pyc
 data/encode*
 data/roadmap*
 data/sample_beds.txt
