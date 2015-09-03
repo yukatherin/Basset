@@ -337,6 +337,17 @@ function ConvNet:setStructureParams(job)
         self.conv_filters = {self.conv_filters}
     end
 
+    -- or determine via scaling
+    if job.conv_layers and job.conv_filters_scale then
+        self.conv_layers = job.conv_layers
+        for i=2,self.conv_layers do
+            self.conv_filters[i] = math.ceil(job.conv_filters_scale * self.conv_filters[i-1])
+        end
+    end
+
+    -- determine number of convolution layers
+    self.conv_layers = #self.conv_filters
+
     -- convolution filter sizes
     if job.conv_filter1_size == nil then
         self.conv_filter_sizes = job.conv_filter_sizes or {10}
@@ -352,11 +363,22 @@ function ConvNet:setStructureParams(job)
         end
     end
 
-    -- number of convolutional layers
-    self.conv_layers = #self.conv_filters
+    -- or determine via scaling
+    if job.conv_layers and job.conv_size_scale then
+        for i=2,job.conv_layers do
+            self.conv_filter_sizes[i] = math.ceil(job.conv_size_scale * self.conv_filter_sizes[i-1])
+        end
+    end
 
     -- pooling widths
     self.pool_width = table_ext(job.pool_width, 1, self.conv_layers)
+
+    -- or determine via scaling
+    if job.conv_layers and job.pool_width_scale then
+        for i=2,job.conv_layers do
+            self.pool_width[i] = math.ceil(job.pool_width_scale * self.pool_width[i-1])
+        end
+    end
 
     -- pooling operation ("max", "stochastic")
     self.pool_op = job.pool_op or "stochastic"
@@ -373,7 +395,7 @@ function ConvNet:setStructureParams(job)
 
 
     -- target value type ("binary", "continuous", "positive")
-    self.target_type == job.target_type or "binary"
+    self.target_type = job.target_type or "binary"
 
     ---------------------------------------------
     -- regularization
@@ -437,12 +459,12 @@ function ConvNet:train_epoch(batcher)
             self.model:backward(inputs, df_do)
 
             -- penalties
-            if self.coef_l2 then
+            if self.coef_l2 > 0 then
                 -- add to loss
-                f = f + self.coef_l2 * torch.norm(parameters,2)^2/2
+                f = f + self.coef_l2 * torch.norm(self.parameters,2)^2/2
 
                 -- add to gradient
-                gradParameters:add(torch.sign(parameters):mul(self.coef_l2) + parameters:clone():mul(self.coef_l2))
+                self.gradParameters:add(self.coef_l2, self.parameters)
             end
 
             -- return f and df/dX
