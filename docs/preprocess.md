@@ -48,3 +48,23 @@ Construct an HDF5 file, dividng the data into training, validation, and test sub
 | -s | random_seed | numpy.random seed [Default: 1] |
 | -t | test_pct | Test % [Default: 0] |
 | -v | valid_pct | Validation % [Default: 0] |
+
+
+--------------------------------------------------------------------------------
+<a name="sample_db.py"/>
+#### sample_db.py
+
+Sample sequences from an existing database.
+
+- Input
+  - sample_num[int]
+  - [BED](../docs/file_specs.md#bed)
+  - [Table](../docs/file_specs.md#table)
+- Output
+  - [BED](../docs/file_specs.md#bed)
+  - [Table](../docs/file_specs.md#table)
+- Options
+
+| Option | Variable | Help |
+| --- | --- | --- |
+| -o | out_prefix | Output file prefix [Default: peak_size] |
