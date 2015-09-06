@@ -9,7 +9,7 @@
 Merge a set of feature BED files for training.
 
 - Input
-  - [sample_beds_file](../docs/file_specs.md#bed)
+  - [target_beds_file](../docs/file_specs.md#bed)
 - Output
   - [BED](../docs/file_specs.md#bed)
   - [Table](../docs/file_specs.md#table)
