@@ -381,14 +381,14 @@ function ConvNet:setStructureParams(job)
     end
 
     -- pooling operation ("max", "stochastic")
-    self.pool_op = job.pool_op or "stochastic"
+    self.pool_op = job.pool_op or "max"
 
     -- random connections (need to test this with one layer, where it becomes irrelevant)
     self.conv_conn = table_ext(job.conv_conn, 1, self.conv_layers-1)
 
 
     -- number of hidden units in the final fully connected layers
-    self.hidden_units = table_ext(job.hidden_units, 20, 1)
+    self.hidden_units = table_ext(job.hidden_units, 500, 1)
 
     -- number of fully connected final layers
     self.hidden_layers = #self.hidden_units
@@ -576,8 +576,12 @@ function table_ext(try, default, size)
     -- set var to try if available or default otherwise
     var = try or default
 
-    -- if it was a number, make it a table
+    -- if it was a number
     if type(var) == "number" then
+        -- change default to the number
+        default = var
+
+        -- make it a table
         var = {var}
     end
 
