@@ -27,7 +27,7 @@ def main():
     subprocess.call(cmd, shell=True)
 
     # preprocess
-    cmd = 'preprocess_features.py -y -m 100 -s 600 -o encode_roadmap -c /Users/davidkelley/research/common/data/genomes/hg19/assembly/human.hg19.genome sample_beds.txt'
+    cmd = 'preprocess_features.py -y -m 200 -s 600 -o encode_roadmap -c /Users/davidkelley/research/common/data/genomes/hg19/assembly/human.hg19.genome sample_beds.txt'
     subprocess.call(cmd, shell=True)
 
     # make a FASTA file
@@ -35,7 +35,7 @@ def main():
     subprocess.call(cmd, shell=True)
 
     # make an HDF5 file
-    cmd = 'seq_hdf5.py -t 0.0197676 -v 0.0204215 encode_roadmap.fa encode_roadmap_acc.txt encode_roadmap'
+    cmd = 'seq_hdf5.py -c -r -t 71886 -v 70000 encode_roadmap.fa encode_roadmap_act.txt encode_roadmap.h5'
     subprocess.call(cmd, shell=True)
 
     os.chdir('..')
