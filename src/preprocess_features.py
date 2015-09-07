@@ -25,7 +25,7 @@ def main():
     parser.add_option('-a', dest='db_act_file', help='Existing database of activity scores')
     parser.add_option('-b', dest='db_bed', help='Existing database of BED peaks.')
     parser.add_option('-c', dest='chrom_lengths_file', help='Table of chromosome lengths')
-    parser.add_option('-m', dest='merge_dist', default=0, type='int', help='Distance under which to merge features. Can be negative. [Default: %default]')
+    parser.add_option('-m', dest='merge_overlap', default=200, type='int', help='Overlap length above which to merge features [Default: %default]')
     parser.add_option('-n', dest='no_db_activity', default=False, action='store_true', help='Do not pass along the activities of the database sequences [Default: %default]')
     parser.add_option('-o', dest='out_prefix', default='peaks', help='Output file prefix [Default: %default]')
     parser.add_option('-s', dest='peak_size', default=600, type='int', help='Peak extension size [Default: %default]')
@@ -162,38 +162,41 @@ def main():
             peak_end = int(a[2])
             peak_act = activity_set(a[6])
             peak = Peak(peak_start, peak_end, peak_act)
+            peak.extend(options.peak_size, chrom_lengths.get(chrom,None))
 
             if len(open_peaks) == 0:
                 # initialize open peak
-                open_end = peak_end
+                open_end = peak.end
                 open_peaks = [peak]
 
             else:
                 # operate on exiting open peak
 
                 # if beyond existing open peak
-                if open_end + options.merge_dist <= peak_start:
+                if open_end - options.merge_overlap <= peak.start:
                     # close open peak
-                    mpeak = merge_peaks(open_peaks, options.peak_size, chrom_lengths.get(chrom,None))
+                    mpeaks = merge_peaks(open_peaks, options.peak_size, options.merge_overlap, chrom_lengths.get(chrom,None))
 
                     # print to file
-                    print >> final_bed_out, mpeak.bed_str(chrom, strand)
+                    for mpeak in mpeaks:
+                        print >> final_bed_out, mpeak.bed_str(chrom, strand)
 
                     # initialize open peak
-                    open_end = peak_end
+                    open_end = peak.end
                     open_peaks = [peak]
 
                 else:
                     # extend open peak
                     open_peaks.append(peak)
-                    open_end = max(open_end, peak_end)
+                    open_end = max(open_end, peak.end)
 
         if len(open_peaks) > 0:
             # close open peak
-            mpeak = merge_peaks(open_peaks, options.peak_size, chrom_lengths.get(chrom,None))
+            mpeaks = merge_peaks(open_peaks, options.peak_size, options.merge_overlap, chrom_lengths.get(chrom,None))
 
             # print to file
-            print >> final_bed_out, mpeak.bed_str(chrom, strand)
+            for mpeak in mpeaks:
+                print >> final_bed_out, mpeak.bed_str(chrom, strand)
 
     final_bed_out.close()
 
@@ -252,7 +255,43 @@ def activity_set(act_cs):
     return aset
 
 
-def merge_peaks(peaks, peak_size, chrom_len):
+def merge_peaks(peaks, peak_size, merge_overlap, chrom_len):
+    ''' Merge and the list of Peaks.
+
+    Repeatedly find the closest adjacent peaks and consider
+    merging them together, until there are no more peaks
+    we want to merge.
+
+    Attributes:
+        peaks (list[Peak]) : list of Peaks
+        peak_size (int) : desired peak extension size
+        chrom_len (int) : chromsome length
+
+    Returns:
+        Peak representing the merger
+    '''
+    max_overlap = merge_overlap
+    while len(peaks) > 1 and max_overlap >= merge_overlap:
+        # find largest overlap
+        max_i = 0
+        max_overlap = peaks[0].end - peaks[1].start
+        for i in range(1,len(peaks)-1):
+            peaks_overlap = peaks[i].end - peaks[i+1].start
+            if peaks_overlap > max_overlap:
+                max_i = i
+                max_overlap = peaks_overlap
+
+        if max_overlap >= merge_overlap:
+            # merge peaks
+            peaks[max_i].merge(peaks[max_i+1], peak_size, chrom_len)
+
+            # remove merged peak
+            peaks = peaks[:max_i+1] + peaks[max_i+2:]
+
+    return peaks
+
+
+def merge_peaks_dist(peaks, peak_size, chrom_len):
     ''' Merge and grow the Peaks in the given list.
 
     Attributes:
@@ -289,25 +328,6 @@ def merge_peaks(peaks, peak_size, chrom_len):
     return Peak(merge_start, merge_end, merge_act)
 
 
-def merge_peaks_greedy(peaks, peak_size, chrom_len):
-    '''
-    Another approach to this problem would be to use an
-    extension size and a maximum overlap.
-
-    Then in the primary loop above, we extend every peak
-    immediately and cluster overlaps.
-
-    When there are no more overlaps, we parse that region
-    by greedily traversing the list for the shortest
-    distance and merging the two.
-
-    This is O(N^2), so I might need a better solution for
-    bigger clusters. Like do an initial pass and immediately
-    merge any two peaks closer than X bp.
-    '''
-    pass
-
-
 class Peak:
     ''' Peak representation
 
@@ -321,6 +341,15 @@ class Peak:
         self.end = end
         self.act = act
 
+    def extend(self, ext_len, chrom_len):
+        mid = (self.start + self.end - 1) / 2.0
+        mid = int(0.5 + mid)
+        self.start = max(0, mid - ext_len/2)
+        self.end = self.start + ext_len
+        if chrom_len and self.end > chrom_len:
+            self.end = chrom_len+1
+            self.start = self.end - ext_len
+
     def bed_str(self, chrom, strand):
         ''' Return a BED-style line '''
         if len(self.act) == 0:
@@ -329,6 +358,34 @@ class Peak:
             act_str = ','.join([str(ai) for ai in sorted(list(self.act))])
         cols = (chrom, str(self.start), str(self.end), '.', '1', strand, act_str)
         return '\t'.join(cols)
+
+    def merge(self, peak2, ext_len, chrom_len):
+        # find peak midpoints
+        peak_mids = [(self.start + self.end - 1) / 2.0]
+        peak_mids.append((peak2.start + peak2.end - 1) / 2.0)
+
+        # weight peaks
+        peak_weights = [1+len(self.act)]
+        peak_weights.append(1+len(peak2.act))
+
+        # compute a weighted average
+        merge_mid = int(0.5+np.average(peak_mids, weights=peak_weights))
+
+        # extend to the full size
+        merge_start = max(0, merge_mid - ext_len/2)
+        merge_end = merge_start + ext_len
+        if chrom_len and merge_end > chrom_len:
+            merge_end = chrom_len+1
+            merge_start = merge_end - ext_len
+
+        # merge activities
+        merge_act = self.act | peak2.act
+
+        # set merge to this peak
+        self.start = merge_start
+        self.end = merge_end
+        self.act = merge_act
+
 
 ################################################################################
 # __main__
