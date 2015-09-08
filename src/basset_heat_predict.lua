@@ -1,0 +1,159 @@
+#!/usr/bin/env th
+
+require 'cunn'
+require 'cutorch'
+require 'hdf5'
+
+require 'batcherX'
+require 'convnet'
+require 'convnet_io'
+require 'postprocess'
+
+----------------------------------------------------------------
+-- parse arguments
+----------------------------------------------------------------
+cmd = torch.CmdLine()
+cmd:text()
+cmd:text('DNA ConvNet hidden layer visualizations')
+cmd:text()
+cmd:text('Arguments')
+cmd:argument('model_file')
+cmd:argument('data_file')
+cmd:argument('out_file')
+cmd:text()
+cmd:text('Options:')
+cmd:option('-center_nt', 0, 'Mutate only the center nucleotides')
+cmd:option('-pre_sigmoid', false, 'Measure changes pre-sigmoid')
+cmd:option('-raw_prob', false, 'Measure raw probabilities')
+cmd:option('-sample', 0, 'Sequences to sample')
+opt = cmd:parse(arg)
+
+-- fix seed
+torch.manualSeed(1)
+
+----------------------------------------------------------------
+-- load data
+----------------------------------------------------------------
+local convnet_params = torch.load(opt.model_file)
+local convnet = ConvNet:__init()
+convnet:load(convnet_params)
+convnet:decuda()
+
+local test_seqs = load_test_seqs(opt.data_file)
+
+-- down sample
+local sample = opt.sample
+if sample == 0 or sample > (#test_seqs)[1] then
+	sample = (#test_seqs)[1]
+end
+local batcher = BatcherX:__init(test_seqs, sample)
+local X = batcher:next()
+
+local num_seqs = (#X)[1]
+local seq_len = (#X)[4]
+local nts = {'A','C','G','T'}
+
+-- final layer index
+local fl = #convnet.model.modules - 1
+
+----------------------------------------------------------------
+-- predict
+----------------------------------------------------------------
+-- predict seqs
+convnet.model:evaluate()
+local preds = convnet:predict(X, num_seqs)
+local num_targets = (#preds)[2]
+
+-- normalize predictions
+local preds_means
+if not opt.raw_prob then
+    preds_means = preds:mean(1):squeeze()
+    preds = troy_norm(preds, preds_means)
+end
+
+-- compute pre-sigmoid distribution stats
+local prepreds = convnet.model.modules[fl].output:clone()
+local prepreds_means = prepreds:mean(1):squeeze()
+local prepreds_stds = prepreds:std(1):squeeze()
+
+-- determine where modifications should begin and end
+local delta_len = seq_len
+local delta_start = 1
+if opt.center_nt > 0 then
+	delta_len = math.min(delta_len, opt.center_nt)
+	delta_start = 1 + torch.floor((seq_len - delta_len)/2)
+end
+local delta_end = delta_start + delta_len - 1
+local num_mods = 3*delta_len
+
+-- initialize a data structure for modified predictions
+local seq_mod_preds = torch.DoubleTensor(num_seqs, 4, delta_len, num_targets)
+
+for si=1,num_seqs do
+	local seq_1hot = X[{si,{},{},{}}]
+
+	-- pre-allocate a Tensor of modified sequnces
+	local seq_mods = torch.Tensor(num_mods, 4, 1, seq_len)
+
+	-- construct a batch of modified sequecnes
+	local mi = 1
+	for pos=delta_start,delta_end do
+		for ni=1,4 do
+			if nts[ni] ~= get_1hot(seq_1hot, pos) then
+				-- copy the seq's one hot coding
+				seq_mods[mi] = seq_1hot:clone()
+
+				-- change the nt
+				set_1hot(seq_mods[mi], pos, nts[ni])
+
+				-- increment on to next mod
+				mi = mi + 1
+			end
+		end
+	end
+
+	-- predict modified sequences
+	local mod_preds = convnet:predict(seq_mods, num_mods)
+    local mod_prepreds = convnet.model.modules[fl].output:clone()
+
+    -- normalize predictions
+    if not opt.raw_prob then
+        mod_preds = troy_norm(mod_preds, preds_means)
+    end
+
+	-- copy into the full matrix
+	mi = 1
+	for pos=delta_start,delta_end do
+		local pi = 1 + pos - delta_start
+		local seq_nt = get_1hot(seq_1hot, pos)
+
+		for ni=1,4 do
+			if nts[ni] == seq_nt then
+				for ti=1,num_targets do
+                    if opt.pre_sigmoid then
+                        seq_mod_preds[{si,ni,pi,ti}] = (prepreds[{si,ti}] - prepreds_means[ti]) / prepreds_stds[ti]
+                    else
+                        seq_mod_preds[{si,ni,pi,ti}] = preds[{si,ti}]
+                    end
+				end
+			else
+				for ti=1,num_targets do
+					if opt.pre_sigmoid then
+                        seq_mod_preds[{si,ni,pi,ti}] = (mod_prepreds[{mi,ti}] - prepreds_means[ti]) / prepreds_stds[ti]
+                    else
+                        seq_mod_preds[{si,ni,pi,ti}] = mod_preds[{mi,ti}]
+                    end
+				end
+				mi = mi + 1
+			end
+		end
+	end
+
+end
+
+----------------------------------------------------------------
+-- dump to file, load into python
+----------------------------------------------------------------
+local hdf_out = hdf5.open(opt.out_file, 'w')
+hdf_out:write("seq_mod_preds", seq_mod_preds)
+hdf_out:close()
