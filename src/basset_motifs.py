@@ -49,7 +49,7 @@ def main():
     #################################################################
     if options.model_hdf5_file is None:
         options.model_hdf5_file = '%s/model_out.h5' % options.out_dir
-        torch_cmd = 'basset_motifs_predict.lua -s %d %s %s %s' % (options.sample, model_file, test_hdf5_file, options.model_hdf5_file)
+        torch_cmd = 'basset_motifs_predict.lua -sample %d %s %s %s' % (options.sample, model_file, test_hdf5_file, options.model_hdf5_file)
         subprocess.call(torch_cmd, shell=True)
 
 
