@@ -127,6 +127,29 @@ def dna_one_hot(seq, seq_len=None):
 
 
 ################################################################################
+# fasta2dict
+#
+# Read a multifasta file into a dict.  Taking the whole line as the key.
+#
+# I've found this can be quite slow for some reason, even for a single fasta
+# entry.
+################################################################################
+def fasta2dict(fasta_file):
+    fasta_dict = OrderedDict()
+    header = ''
+
+    for line in open(fasta_file):
+        if line[0] == '>':
+            #header = line.split()[0][1:]
+            header = line[1:].rstrip()
+            fasta_dict[header] = ''
+        else:
+            fasta_dict[header] += line.rstrip()
+
+    return fasta_dict
+
+
+################################################################################
 # hash_scores
 #
 # Input
