@@ -332,8 +332,8 @@ class Peak:
     ''' Peak representation
 
     Attributes:
-        start (int)   : peak start
-        end   (int)   : peak end
+        start (int) : peak start
+        end   (int) : peak end
         act   (set[int]) : set of target indexes where this peak is active.
     '''
     def __init__(self, start, end, act):
@@ -342,6 +342,12 @@ class Peak:
         self.act = act
 
     def extend(self, ext_len, chrom_len):
+        ''' Extend the peak to the given length
+
+        Attributes:
+            ext_len (int) : length to extend the peak to
+            chrom_len (int) : chromosome length to cap the peak at
+        '''
         mid = (self.start + self.end - 1) / 2.0
         mid = int(0.5 + mid)
         self.start = max(0, mid - ext_len/2)
@@ -351,7 +357,12 @@ class Peak:
             self.start = self.end - ext_len
 
     def bed_str(self, chrom, strand):
-        ''' Return a BED-style line '''
+        ''' Return a BED-style line
+
+        Attributes:
+            chrom (str)
+            strand (str)
+        '''
         if len(self.act) == 0:
             act_str = '.'
         else:
@@ -360,6 +371,13 @@ class Peak:
         return '\t'.join(cols)
 
     def merge(self, peak2, ext_len, chrom_len):
+        ''' Merge the given peak2 into this peak
+
+        Attributes:
+            peak2 (Peak)
+            ext_len (int) : length to extend the merged peak to
+            chrom_len (int) : chromosome length to cap the peak at
+        '''
         # find peak midpoints
         peak_mids = [(self.start + self.end - 1) / 2.0]
         peak_mids.append((peak2.start + peak2.end - 1) / 2.0)
