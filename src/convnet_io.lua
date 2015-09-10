@@ -49,6 +49,7 @@ function load_test(hdf5_file)
     return test_seqs, test_scores
 end
 
+
 --------------------------------------------------------------------------
 -- load_test_seqs
 --
