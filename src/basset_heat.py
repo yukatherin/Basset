@@ -28,7 +28,7 @@ def main():
     parser.add_option('-l', dest='min_limit', default=0.1, type='float', help='Minimum heatmap limit [Default: %default]')
     parser.add_option('-n', dest='center_nt', default=200, type='int', help='Center nucleotides to mutate and plot in the heatmap [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='heat', help='Output directory [Default: %default]')
-    parser.add_option('-s', dest='sample', default=1000, type='int', help='Sample sequences from the input HDF5 test set [Default:%default]')
+    parser.add_option('-s', dest='sample', default=100, type='int', help='Sample sequences from the input HDF5 test set [Default:%default]')
     (options,args) = parser.parse_args()
 
     if len(args) != 2:
