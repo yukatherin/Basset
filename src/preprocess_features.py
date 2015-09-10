@@ -344,7 +344,7 @@ class Peak:
     def extend(self, ext_len, chrom_len):
         ''' Extend the peak to the given length
 
-        Attributes:
+        Args:
             ext_len (int) : length to extend the peak to
             chrom_len (int) : chromosome length to cap the peak at
         '''
@@ -359,7 +359,7 @@ class Peak:
     def bed_str(self, chrom, strand):
         ''' Return a BED-style line
 
-        Attributes:
+        Args:
             chrom (str)
             strand (str)
         '''
@@ -373,7 +373,7 @@ class Peak:
     def merge(self, peak2, ext_len, chrom_len):
         ''' Merge the given peak2 into this peak
 
-        Attributes:
+        Args:
             peak2 (Peak)
             ext_len (int) : length to extend the merged peak to
             chrom_len (int) : chromosome length to cap the peak at
