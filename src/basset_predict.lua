@@ -1,12 +1,8 @@
 #!/usr/bin/env th
 
--- I'm going to need to ditch these if we want users to be able
--- to study a GPU-learned model on the CPU.
-require 'cutorch'
-require 'cunn'
-
 require 'convnet'
 require 'convnet_io'
+require 'postprocess'
 
 ----------------------------------------------------------------
 -- parse arguments
@@ -21,6 +17,7 @@ cmd:argument('data_file')
 cmd:argument('out_file')
 cmd:text()
 cmd:text('Options:')
+cmd:option('-norm', false, 'Normalize all targets to a level plane')
 cmd:text()
 opt = cmd:parse(arg)
 
@@ -49,9 +46,30 @@ convnet.model:evaluate()
 -- measure accuracy on a test set
 local preds = convnet:predict(test_seqs)
 
+if opt.norm then
+    -- TEMP! TEMP! TEMP!
+    if convnet.pred_means == nil then
+        convnet.pred_means = preds:mean(1):squeeze()
+    end
+
+    preds = troy_norm(preds, convnet.pred_means)
+end
+
 ----------------------------------------------------------------
 -- dump to file
 ----------------------------------------------------------------
-local hdf_out = hdf5.open(opt.out_file, 'w')
-hdf_out:write("preds", preds)
-hdf_out:close()
+local predict_out = io.open(opt.out_file, 'w')
+
+for si=1,(#preds)[1] do
+    predict_out:write(preds[{si,1}])
+    for ti=2,(#preds)[2] do
+        predict_out:write("\t",preds[{si,ti}])
+    end
+    predict_out:write("\n")
+end
+
+predict_out:close()
+
+-- local hdf_out = hdf5.open(opt.out_file, 'w')
+-- hdf_out:write("preds", preds)
+-- hdf_out:close()
