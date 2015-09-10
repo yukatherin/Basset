@@ -188,13 +188,15 @@ end
 -- decuda
 --
 -- Move the model back to the CPU.
--- This is missing something.
 ----------------------------------------------------------------
 function ConvNet:decuda()
-    self.model:double()
+    self.optim_state.m = self.optim_state.m:double()
+    self.optim_state.tmp = self.optim_state.tmp:double()
     self.criterion:double()
-    self.parameters:double()
-    self.gradParameters:double()
+    self.model:double()
+    self.parameters, self.gradParameters = self.model:getParameters()
+    -- self.parameters = self.parameters:double()
+    -- self.gradParameters = self.gradParameters:double()
     cuda = false
 end
 
@@ -284,6 +286,14 @@ function ConvNet:sanitize()
             if name == 'gradOutput_gpu' then val['gradOutput_gpu'] = {} end
             if name == 'gradInput_gpu' then val['gradInput_gpu'] = {} end
             if name == 'output' or name == 'gradInput' then
+                val[name] = field.new()
+            end
+            -- batch normalization
+            if name == 'buffer' or name == 'normalized' or name == 'centered' then
+                val[name] = field.new()
+            end
+            -- max pooling
+            if name == 'indices' then
                 val[name] = field.new()
             end
         end
@@ -543,6 +553,10 @@ function ConvNet:test(X, Y, batch_size)
 
     -- mean loss over examples
     local avg_loss = loss / (#X)[1]
+
+    -- save pred means and stds
+    self.pred_means = preds:mean(1):squeeze()
+    self.pred_stds = preds:std(1):squeeze()
 
     local Ydim = (#Y)[2]
     if self.target_type == "binary" then
