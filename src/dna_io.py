@@ -112,12 +112,12 @@ def dna_one_hot(seq, seq_len=None):
 
     # map nt's to a matrix 4 x len(seq) of 0's and 1's.
     seq_code = np.zeros((4,seq_len), dtype='int8')
-    for i in range(len(seq)):
+    for i in range(seq_len):
         try:
             seq_code[int(seq[i]),i] = 1
         except:
             # print >> sys.stderr, 'Non-ACGT nucleotide encountered'
-            seq_code[:,i] = [0.25]*4
+            seq_code[:,i] = 0.25
 
     # flatten and make a column vector 1 x len(seq)
     seq_vec = seq_code.flatten()[None,:]
