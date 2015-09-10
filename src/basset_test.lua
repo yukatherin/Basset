@@ -2,11 +2,6 @@
 
 require 'lfs'
 
--- I'm going to need to ditch these if we want users to be able
--- to study a GPU-learned model on the CPU.
-require 'cutorch'
-require 'cunn'
-
 require 'batcher'
 require 'convnet'
 require 'convnet_io'
@@ -45,7 +40,6 @@ local convnet = ConvNet:__init()
 -- load from saved parameters
 local convnet_params = torch.load(opt.model_file)
 convnet:load(convnet_params)
-convnet:decuda()
 
 ----------------------------------------------------------------
 -- predict and test

@@ -35,7 +35,6 @@ local convnet = ConvNet:__init()
 -- load from saved parameters
 local convnet_params = torch.load(opt.model_file)
 convnet:load(convnet_params)
-convnet:decuda()
 
 ----------------------------------------------------------------
 -- predict and test
