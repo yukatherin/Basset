@@ -22,7 +22,7 @@ function ConvNet:__init()
     return obj
 end
 
-function ConvNet:build(job, seqs, scores)
+function ConvNet:build(job, seqs, targets, target_labels)
     -- parse network structure parameters
     self:setStructureParams(job)
 
@@ -30,7 +30,8 @@ function ConvNet:build(job, seqs, scores)
     self.model = nn.Sequential()
 
     -- store useful values
-    self.num_targets = (#scores)[2]
+    self.num_targets = (#targets)[2]
+    self.target_labels = target_labels
     depth = (#seqs)[2]
     seq_len = (#seqs)[4]
 
@@ -127,7 +128,7 @@ function ConvNet:build(job, seqs, scores)
     if self.target_type == "binary" then
         -- final layer w/ target priors as initial biases
         final_linear = nn.Linear(hidden_in, self.num_targets)
-        target_priors = scores:mean(1):squeeze()
+        target_priors = targets:mean(1):squeeze()
         biases_init = -torch.log(torch.pow(target_priors, -1) - 1)
         final_linear.bias = biases_init
         self.model:add(final_linear)

@@ -33,7 +33,7 @@ require 'convnet'
 ----------------------------------------------------------------
 -- load data
 ----------------------------------------------------------------
-train_seqs,train_scores,valid_seqs,valid_scores = load_train(opt.data_file)
+train_seqs, train_targets, valid_seqs, valid_targets, target_labels = load_train(opt.data_file)
 
 ----------------------------------------------------------------
 -- construct model
@@ -88,7 +88,7 @@ if opt.restart ~= '' then
     local convnet_params = torch.load(opt.restart)
     convnet:load(convnet_params)
 else
-    build_success = convnet:build(job, train_seqs, train_scores)
+    build_success = convnet:build(job, train_seqs, train_targets, target_labels)
 
     if build_success == false then
         print('Invalid model')
@@ -112,7 +112,7 @@ end
 local epoch = 1
 local epoch_best = 1
 local valid_best = math.huge
-local batcher = Batcher:__init(train_seqs, train_scores, batch_size, true)
+local batcher = Batcher:__init(train_seqs, train_targets, batch_size, true)
 
 while epoch - epoch_best <= opt.stagnant_t do
     io.write(string.format("Epoch #%3d   ", epoch))
@@ -126,7 +126,7 @@ while epoch - epoch_best <= opt.stagnant_t do
     convnet.model:evaluate()
 
     -- measure accuracy on a test set
-    local valid_loss, valid_aucs = convnet:test(valid_seqs, valid_scores)
+    local valid_loss, valid_aucs = convnet:test(valid_seqs, valid_targets)
     local valid_auc_avg = torch.mean(valid_aucs)
 
     -- print w/ time

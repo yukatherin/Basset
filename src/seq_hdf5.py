@@ -50,7 +50,7 @@ def main():
             headers.append(line[1:].rstrip())
     headers = np.array(headers)
 
-    target_names = open(targets_file).readline().strip().split('\t')
+    target_labels = open(targets_file).readline().strip().split('\t')
 
     if options.permute:
         order = npr.permutation(seqs.shape[0])
@@ -95,7 +95,7 @@ def main():
     #################################################################
     h5f = h5py.File(out_file, 'w')
 
-    h5f.create_dataset('target_names', data=target_names)
+    h5f.create_dataset('target_labels', data=target_labels)
 
     if train_count > 0:
         h5f.create_dataset('train_in', data=train_seqs)

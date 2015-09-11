@@ -46,7 +46,7 @@ convnet.model:evaluate()
 local preds = convnet:predict(test_seqs)
 
 if opt.norm then
-    -- TEMP! TEMP! TEMP!
+    -- TEMP! TMP!
     if convnet.pred_means == nil then
         convnet.pred_means = preds:mean(1):squeeze()
     end
@@ -59,10 +59,19 @@ end
 ----------------------------------------------------------------
 local predict_out = io.open(opt.out_file, 'w')
 
+-- print labels
+if convnet.target_labels ~= nil do   -- TEMP! TMP!
+    predict_out:write(convnet.target_labels[1])
+    for ti=2,(#convnet.target_labels) do
+        predict_out:write(string.format("\t%s",convnet.target_labels[ti]))
+    predict_out:write("\n")
+end
+
+-- print predictions
 for si=1,(#preds)[1] do
     predict_out:write(preds[{si,1}])
     for ti=2,(#preds)[2] do
-        predict_out:write("\t",preds[{si,ti}])
+        predict_out:write(string.format("\t%s",preds[{si,ti}]))
     end
     predict_out:write("\n")
 end
