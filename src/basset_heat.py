@@ -48,6 +48,8 @@ def main():
         seqs = dna_io.fasta2dict(input_file)
         seq_headers = seqs.keys()
 
+        model_input_hdf5 = '%s/model_in.h5'%options.out_dir
+
         if options.input_activity_file:
             # one hot code
             seqs_1hot, targets = dna_io.load_data_1hot(input_file, options.input_activity_file, mean_norm=False, whiten=False, permute=False, sort=False)
@@ -57,7 +59,6 @@ def main():
 
             # write as test data to a HDF5 file
             #  (save everything so the user can just input this next time)
-            model_input_hdf5 = '%s/model_in.h5'%options.out_dir
             h5f = h5py.File(model_input_hdf5, 'w')
             h5f.create_dataset('target_names', data=target_names)
             h5f.create_dataset('test_in', data=seqs_1hot)
@@ -70,7 +71,7 @@ def main():
             seqs_1hot = dna_io.load_sequences(input_file, permute=False)
 
             # write as test data to a HDF5 file
-            h5f = h5py.File('%s/model_in.h5'%options.out_dir, 'w')
+            h5f = h5py.File(model_input_hdf5, 'w')
             h5f.create_dataset('test_in', data=seqs_1hot)
             h5f.close()
 
