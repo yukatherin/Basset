@@ -64,6 +64,7 @@ if convnet.target_labels ~= nil do   -- TEMP! TMP!
     predict_out:write(convnet.target_labels[1])
     for ti=2,(#convnet.target_labels) do
         predict_out:write(string.format("\t%s",convnet.target_labels[ti]))
+    end
     predict_out:write("\n")
 end
 
