@@ -60,7 +60,7 @@ end
 local predict_out = io.open(opt.out_file, 'w')
 
 -- print labels
-if convnet.target_labels ~= nil do   -- TEMP! TMP!
+if convnet.target_labels ~= nil then   -- TEMP! TMP!
     predict_out:write(convnet.target_labels[1])
     for ti=2,(#convnet.target_labels) do
         predict_out:write(string.format("\t%s",convnet.target_labels[ti]))
