@@ -80,10 +80,74 @@ def main():
     # store useful variables
     num_filters = filter_weights.shape[0]
     filter_size = filter_weights.shape[2]
-    num_seqs = filter_outs.shape[0]
-    num_targets = len(target_names)
 
-    filter_names = np.array(['f%d'%fi for fi in range(num_filters)])
+    #################################################################
+    # individual filter plots
+    #################################################################
+    # also save information contents
+    filters_ic = []
+    meme_out = meme_intro('%s/filters_meme.txt'%options.out_dir, seqs)
+
+    for f in range(num_filters):
+        print 'Filter %d' % f
+
+        # plot filter parameters as a heatmap
+        plot_filter_heat(filter_weights[f,:,:], '%s/filter%d_heat.pdf' % (options.out_dir,f))
+
+        # plot weblogo of high scoring outputs
+        plot_filter_logo(filter_outs[:,f,:], filter_size, seqs, '%s/filter%d_logo'%(options.out_dir,f), maxpct_t=0.5)
+
+        # make a PWM for the filter
+        filter_pwm, nsites = make_filter_pwm('%s/filter%d_logo.fa'%(options.out_dir,f))
+
+        if nsites < 10:
+            # no information
+            filters_ic.append(0)
+        else:
+            # compute and save information content
+            filters_ic.append(info_content(filter_pwm))
+
+            # add to the meme motif file
+            meme_add(meme_out, f, filter_pwm, nsites)
+
+    meme_out.close()
+
+
+    #################################################################
+    # annotate filters
+    #################################################################
+    # run tomtom
+    subprocess.call('tomtom -thresh 0.1 -oc %s/tomtom %s/filters_meme.txt %s' % (options.out_dir, options.out_dir, options.meme_db), shell=True)
+
+    # read in annotations
+    filter_names = name_filters(num_filters, '%s/tomtom/tomtom.txt'%options.out_dir, options.meme_db)
+
+    #################################################################
+    # print a table of information
+    #################################################################
+    table_out = open('%s/table.txt'%options.out_dir, 'w')
+
+    # print header for later panda reading
+    header_cols = ('', 'consensus', 'annotation', 'ic', 'mean', 'std')
+    print >> table_out, '%3s  %19s  %10s  %5s  %6s  %6s' % header_cols
+
+    for f in range(num_filters):
+        # collapse to a consensus motif
+        consensus = filter_motif(filter_weights[f,:,:])
+
+        # grab annotation
+        annotation = '.'
+        name_pieces = filter_names[f].split('_')
+        if len(name_pieces) > 1:
+            annotation = name_pieces[1]
+
+        # plot density of filter output scores
+        fmean, fstd = plot_score_density(np.ravel(filter_outs[:,f,:]), '%s/filter%d_dens.pdf' % (options.out_dir,f))
+
+        row_cols = (f, consensus, annotation, filters_ic[f], fmean, fstd)
+        print >> table_out, '%-3d  %19s  %10s  %5.2f  %6.4f  %6.4f' % row_cols
+
+    table_out.close()
 
 
     #################################################################
@@ -97,62 +161,42 @@ def main():
     plot_filter_seg_heat(filter_outs, whiten=False)
 
     # plot filter-target correlation heatmap
-    plot_target_corr(filter_outs, seq_targets, filter_names, target_names, '%s/filter_target_cors.pdf'%options.out_dir)
-
-    #################################################################
-    # individual filter plots
-    #################################################################
-    stats_out = open('%s/filter_stats.txt'%options.out_dir, 'w')
-
-    meme_out = open('%s/filters_meme.txt'%options.out_dir, 'w')
-    meme_intro(meme_out, seqs)
-
-    for f in range(num_filters):
-        print 'Filter %d' % f
-
-        # plot filter parameters as a heatmap
-        plot_filter_heat(filter_weights[f,:,:], '%s/filter%d_heat.pdf' % (options.out_dir,f))
-
-        # print filter parameters
-        params_out = open('%s/filter%d.txt' % (options.out_dir,f), 'w')
-    	for n in range(4):
-    		print >> params_out, '  '.join(['%6.3f' % v for v in filter_weights[f,n,:]])
-    	print >> params_out, ''
-        params_out.close()
-
-        # collapse to a consensus motif
-        print >> stats_out, '%2d %s' % (f, filter_motif(filter_weights[f,:,:]))
-
-        # plot density of filter output scores
-        plot_score_density(np.ravel(filter_outs[:,f,:]), stats_out, '%s/filter%d_dens.pdf' % (options.out_dir,f))
-
-        # plot weblogo of high scoring outputs
-        plot_filter_logo(filter_outs[:,f,:], filter_size, seqs, '%s/filter%d_logo'%(options.out_dir,f), maxpct_t=0.5)
-
-        # add to the meme motif file
-        meme_add(meme_out, '%s/filter%d_logo.fa'%(options.out_dir,f), f)
-
-    stats_out.close()
-    meme_out.close()
-
-    # run tomtom
-    subprocess.call('tomtom -thresh 0.2 -oc %s/tomtom -png %s/filters_meme.txt %s' % (options.out_dir,options_out_dir,options.meme_db), shell=True)
+    plot_target_corr(filter_outs, seq_targets, filter_names, target_names, '%s/filter_target_cors_mean.pdf'%options.out_dir, 'mean')
+    plot_target_corr(filter_outs, seq_targets, filter_names, target_names, '%s/filter_target_cors_max.pdf'%options.out_dir, 'max')
 
 
-################################################################################
-# meme_add
-#
-# Print intro material for MEME motif format.
-#
-# Input
-#  meme_out:   open file
-#  fasta_file: for learning the background frequencies
-################################################################################
-def meme_add(meme_out, fasta_file, f):
+def get_motif_proteins(meme_db_file):
+    ''' Hash motif_id's to protein names using the MEME DB file '''
+    motif_protein = {}
+    for line in open(meme_db_file):
+        a = line.split()
+        if len(a) > 0 and a[0] == 'MOTIF':
+            if a[2][0] == '(':
+                motif_protein[a[1]] = a[2][1:a[2].find(')')]
+            else:
+                motif_protein[a[1]] = a[2]
+    return motif_protein
+
+
+def info_content(pwm):
+    ''' Compute PWM information content '''
+    pseudoc = 1e-9
+
+    ic = 0
+    for i in range(pwm.shape[0]):
+        for j in range(4):
+            ic += 0.5 + pwm[i][j]*np.log2(pseudoc+pwm[i][j])
+
+    return ic
+
+
+def make_filter_pwm(filter_fasta):
+    ''' Make a PWM for this filter from its top hits '''
+
     nts = {'A':0, 'C':1, 'G':2, 'T':3}
     pwm_counts = []
     nsites = 4 # pseudocounts
-    for line in open(fasta_file):
+    for line in open(filter_fasta):
         if line[0] != '>':
             seq = line.rstrip()
             nsites += 1
@@ -165,30 +209,41 @@ def meme_add(meme_out, fasta_file, f):
             for i in range(len(seq)):
                 pwm_counts[i][nts[seq[i]]] += 1
 
-    if nsites > 4:
-        # normalize
-        pwm_freqs = []
-        for i in range(len(pwm_counts)):
-            pwm_freqs.append([pwm_counts[i][j]/float(nsites) for j in range(4)])
+    # normalize
+    pwm_freqs = []
+    for i in range(len(pwm_counts)):
+        pwm_freqs.append([pwm_counts[i][j]/float(nsites) for j in range(4)])
 
-        print >> meme_out, 'MOTIF filter%d' % f
-        print >> meme_out, 'letter-probability matrix: alength= 4 w= %d nsites= %d' % (len(pwm_freqs), nsites)
-
-        for i in range(len(pwm_freqs)):
-            print >> meme_out, '%.4f %.4f %.4f %.4f' % tuple(pwm_freqs[i])
-        print >> meme_out, ''
+    return np.array(pwm_freqs), nsites-4
 
 
-################################################################################
-# meme_intro
-#
-# Print intro material for MEME motif format.
-#
-# Input
-#  meme_out:   open file
-#  fasta_file: for learning the background frequencies
-################################################################################
-def meme_intro(meme_out, seqs):
+def meme_add(meme_out, f, filter_pwm, nsites):
+    ''' Print a filter to the growing MEME file
+
+    Attrs:
+        meme_out : open file
+        f (int) : filter index #
+        filter_pwm (array) : filter PWM array
+        nsites (int) : number of filter sites
+    '''
+    print >> meme_out, 'MOTIF filter%d' % f
+    print >> meme_out, 'letter-probability matrix: alength= 4 w= %d nsites= %d' % (len(filter_pwm), nsites)
+
+    for i in range(len(filter_pwm)):
+        print >> meme_out, '%.4f %.4f %.4f %.4f' % tuple(filter_pwm[i])
+    print >> meme_out, ''
+
+
+def meme_intro(meme_file, seqs):
+    ''' Open MEME motif format file and print intro
+
+    Attrs:
+        meme_file (str) : filename
+        seqs [str] : list of strings for obtaining background freqs
+
+    Returns:
+        mem_out : open MEME file
+    '''
     nts = {'A':0, 'C':1, 'G':2, 'T':3}
 
     # count
@@ -201,6 +256,10 @@ def meme_intro(meme_out, seqs):
     nt_sum = float(sum(nt_counts))
     nt_freqs = [nt_counts[i]/nt_sum for i in range(4)]
 
+    # open file for writing
+    meme_out = open(meme_file, 'w')
+
+    # print intro material
     print >> meme_out, 'MEME version 4'
     print >> meme_out, ''
     print >> meme_out, 'ALPHABET= ACGT'
@@ -208,6 +267,49 @@ def meme_intro(meme_out, seqs):
     print >> meme_out, 'Background letter frequencies:'
     print >> meme_out, 'A %.4f C %.4f G %.4f T %.4f' % tuple(nt_freqs)
     print >> meme_out, ''
+
+    return meme_out
+
+
+def name_filters(num_filters, tomtom_file, meme_db_file):
+    ''' Name the filters using Tomtom matches.
+
+    Attrs:
+        num_filters (int) : total number of filters
+        tomtom_file (str) : filename of Tomtom output table.
+        meme_db_file (str) : filename of MEME db
+
+    Returns:
+        filter_names [str] :
+    '''
+    # name by number
+    filter_names = ['f%d'%fi for fi in range(num_filters)]
+
+    # name by protein
+    if tomtom_file is not None and meme_db_file is not None:
+        motif_protein = get_motif_proteins(meme_db_file)
+
+        # hash motifs and q-value's by filter
+        filter_motifs = {}
+
+        tt_in = open(tomtom_file)
+        tt_in.readline()
+        for line in tt_in:
+            a = line.split()
+            fi = int(a[0][6:])
+            motif_id = a[1]
+            qval = float(a[5])
+
+            filter_motifs.setdefault(fi,[]).append((qval,motif_id))
+
+        tt_in.close()
+
+        # assign filter's best match
+        for fi in filter_motifs:
+            top_motif = sorted(filter_motifs[fi])[0][1]
+            filter_names[fi] += '_%s' % motif_protein[top_motif]
+
+    return np.array(filter_names)
 
 
 ################################################################################
@@ -222,21 +324,24 @@ def meme_intro(meme_out, seqs):
 #  target_names:
 #  out_pdf:
 ################################################################################
-def plot_target_corr(filter_outs, seq_targets, filter_names, target_names, out_pdf):
+def plot_target_corr(filter_outs, seq_targets, filter_names, target_names, out_pdf, seq_op='mean'):
     num_seqs = filter_outs.shape[0]
     num_targets = len(target_names)
 
-    filter_outs_mean = filter_outs.mean(axis=2)
+    if seq_op == 'mean':
+        filter_outs_seq = filter_outs.mean(axis=2)
+    else:
+        filter_outs_seq = filter_outs.max(axis=2)
 
     # std is sequence by filter.
-    filter_means_std = filter_outs_mean.std(axis=0)
-    filter_outs_mean = filter_outs_mean[:,filter_means_std > 0]
-    filter_names_live = filter_names[filter_means_std > 0]
+    filter_seqs_std = filter_outs_seq.std(axis=0)
+    filter_outs_seq = filter_outs_seq[:,filter_seqs_std > 0]
+    filter_names_live = filter_names[filter_seqs_std > 0]
 
     filter_target_cors = np.zeros((len(filter_names_live),num_targets))
     for fi in range(len(filter_names_live)):
         for ti in range(num_targets):
-            cor, p = spearmanr(filter_outs_mean[:,fi], seq_targets[:num_seqs,ti])
+            cor, p = spearmanr(filter_outs_seq[:,fi], seq_targets[:num_seqs,ti])
             filter_target_cors[fi,ti] = cor
 
     cor_df = pd.DataFrame(filter_target_cors, index=filter_names_live, columns=target_names)
@@ -339,11 +444,13 @@ def plot_filter_seg_heat(filter_outs, whiten=True, drop_dead=True):
     sns.set(font_scale=0.3)
     if whiten:
         out_pdf = 'filter_segs.pdf'
+        dist = 'euclidean'
     else:
         out_pdf = 'filter_segs_raw.pdf'
+        dist = 'cosine'
 
     plt.figure()
-    sns.clustermap(filter_seqs[:,seqs_i], row_cluster=True, col_cluster=True, linewidths=0, xticklabels=False, vmin=hmin, vmax=hmax)
+    sns.clustermap(filter_seqs[:,seqs_i], metric=dist, row_cluster=True, col_cluster=True, linewidths=0, xticklabels=False, vmin=hmin, vmax=hmax)
     plt.savefig(out_pdf)
     #out_png = out_pdf[:-2] + 'ng'
     #plt.savefig(out_png, dpi=300)
@@ -441,7 +548,7 @@ def plot_filter_logo(filter_outs, filter_size, seqs, out_prefix, raw_t=0, maxpct
 #  param_matrix: np.array of the filter's parameter matrix
 #  out_pdf:
 ################################################################################
-def plot_score_density(f_scores, stats_out, out_pdf):
+def plot_score_density(f_scores, out_pdf):
     sns.set(font_scale=1.3)
     plt.figure()
     sns.distplot(f_scores, kde=False)
@@ -449,9 +556,7 @@ def plot_score_density(f_scores, stats_out, out_pdf):
     plt.savefig(out_pdf)
     plt.close()
 
-    zero_pct = len([s for s in f_scores if s > 0]) / float(len(f_scores))
-
-    print >> stats_out, '%.4f  %6.4f' % (zero_pct, np.mean(f_scores))
+    return f_scores.mean(), f_scores.std()
 
 
 ################################################################################
