@@ -29,7 +29,7 @@ def main():
     parser.add_option('-m', dest='min_limit', default=0.1, type='float', help='Minimum heatmap limit [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='sad', help='Output directory for tables and plots [Default: %default]')
     parser.add_option('-s', dest='score', default=False, action='store_true', help='SNPs are labeled with scores as column 7 [Default: %default]')
-    parser.add_option('-t', dest='torch_out_file', default=None, help='Output filename from Torch if already run [Default: %default]')
+    parser.add_option('-t', dest='torch_out_hdf5', default=None, help='Pre-computed Torch model output as HDF5 [Default: %default]')
     (options,args) = parser.parse_args()
 
     if len(args) != 2:
@@ -47,7 +47,7 @@ def main():
     # load SNPs
     snps = vcf.vcf_snps(vcf_file, options.index_snp, options.score)
 
-    if options.torch_out_file is None:
+    if options.torch_out_hdf5 is None:
         # get one hot coded input sequences
         seq_vecs, seqs, seq_headers = vcf.snps_seq1(snps, options.genome_fasta, options.seq_len)
 
@@ -60,13 +60,13 @@ def main():
     #################################################################
     # predict in Torch
     #################################################################
-    if options.torch_out_file is None:
-        options.torch_out_file = '%s/model_out.txt' % options.out_dir
-        subprocess.call('basset_predict.lua -norm %s %s/model_in.h5 %s' % (model_th, options.out_dir, options.torch_out_file), shell=True)
+    if options.torch_out_hdf5 is None:
+        options.torch_out_hdf5 = '%s/model_out.txt' % options.out_dir
+        subprocess.call('basset_predict.lua -norm %s %s/model_in.h5 %s' % (model_th, options.out_dir, options.torch_out_hdf5), shell=True)
 
     # read in predictions
     seq_preds = []
-    for line in open(options.torch_out_file):
+    for line in open(options.torch_out_hdf5):
         seq_preds.append(np.array([float(p) for p in line.split()]))
     seq_preds = np.array(seq_preds)
 

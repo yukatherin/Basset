@@ -24,11 +24,11 @@ def main():
     parser = OptionParser(usage)
     parser.add_option('-a', dest='input_activity_file', help='Optional activity table corresponding to an input FASTA file')
     parser.add_option('-c', dest='cells', default='83', help='Comma-separated list of cell indexes to plot (or -1 for all) [Default: %default]')
-    parser.add_option('-d', dest='model_out_hdf5', default=None, help='Pre-computed model output as HDF5.')
     parser.add_option('-l', dest='min_limit', default=0.1, type='float', help='Minimum heatmap limit [Default: %default]')
     parser.add_option('-n', dest='center_nt', default=200, type='int', help='Center nucleotides to mutate and plot in the heatmap [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='heat', help='Output directory [Default: %default]')
     parser.add_option('-s', dest='sample', default=100, type='int', help='Sample sequences from the input HDF5 test set [Default:%default]')
+    parser.add_option('-t', dest='torch_out_hdf5', default=None, help='Pre-computed Torch model output as HDF5 [Default: %default]')
     (options,args) = parser.parse_args()
 
     if len(args) != 2:
@@ -101,9 +101,9 @@ def main():
     #################################################################
     # Torch predict modifications
     #################################################################
-    if options.model_out_hdf5 is None:
-        options.model_out_hdf5 = '%s/model_out.h5' % options.out_dir
-        torch_cmd = 'basset_heat_predict.lua -sample %d -center_nt %d %s %s %s' % (options.sample, options.center_nt, model_file, model_input_hdf5, options.model_out_hdf5)
+    if options.torch_out_hdf5 is None:
+        options.torch_out_hdf5 = '%s/model_out.h5' % options.out_dir
+        torch_cmd = 'basset_heat_predict.lua -sample %d -center_nt %d %s %s %s' % (options.sample, options.center_nt, model_file, model_input_hdf5, options.torch_out_hdf5)
         print torch_cmd
         subprocess.call(torch_cmd, shell=True)
 
@@ -111,7 +111,7 @@ def main():
     #################################################################
     # load modification predictions
     #################################################################
-    hdf5_in = h5py.File(options.model_out_hdf5, 'r')
+    hdf5_in = h5py.File(options.torch_out_hdf5, 'r')
     seq_mod_preds = np.array(hdf5_in['seq_mod_preds'])
     hdf5_in.close()
 
