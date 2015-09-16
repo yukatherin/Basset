@@ -56,6 +56,7 @@ def main():
         order = npr.permutation(seqs.shape[0])
         seqs = seqs[order]
         targets = targets[order]
+        headers = headers[order]
 
     # check proper sum
     if options.counts:
