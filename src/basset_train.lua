@@ -1,7 +1,8 @@
 #!/usr/bin/env th
 
-require 'batcher'
-require 'convnet_io'
+require 'hdf5'
+
+require 'batcher_hdf5'
 
 ----------------------------------------------------------------
 -- parse arguments
@@ -28,29 +29,37 @@ torch.manualSeed(opt.seed)
 
 -- set cpu/gpu
 cuda = opt.cuda
-require 'convnet'
+require 'convnet_hdf5'
 
 ----------------------------------------------------------------
 -- load data
 ----------------------------------------------------------------
-train_seqs, train_targets, valid_seqs, valid_targets, target_labels = load_train(opt.data_file)
+local data_open = hdf5.open(opt.data_file, 'r')
+local train_targets = data_open:read('train_out')
+local train_seqs = data_open:read('train_in')
+local valid_targets = data_open:read('valid_out')
+local valid_seqs = data_open:read('valid_in')
+
+local num_seqs = train_seqs:dataspaceSize()[1]
+local init_depth = train_seqs:dataspaceSize()[2]
+local seq_len = train_seqs:dataspaceSize()[4]
+local num_targets = train_targets:dataspaceSize()[2]
 
 ----------------------------------------------------------------
 -- construct model
 ----------------------------------------------------------------
 -- general paramters
-local batch_size = 200
+local batch_size = 128
 
 -- get parameters from whetlab
 local scientist = nil
 local job = {}
 if opt.spearmint == '' then
-    job.conv_filters = {100,100,100}
-    job.conv_filter_sizes = {13,5,3}
-    job.pool_width = {6,4,2}
-    job.conv_dropouts = {0,0}
+    job.conv_filters = {100,75,100}
+    job.conv_filter_sizes = {19,11,7}
+    job.pool_width = {3,4,4}
 
-    job.hidden_units = {600,400}
+    job.hidden_units = {500,500}
     job.hidden_dropouts = {0.5,0.5}
 else
     local params_file = string.format('job%s_params.txt', opt.spearmint)
@@ -88,7 +97,7 @@ if opt.restart ~= '' then
     local convnet_params = torch.load(opt.restart)
     convnet:load(convnet_params)
 else
-    build_success = convnet:build(job, train_seqs, train_targets, target_labels)
+    build_success = convnet:build(job, init_depth, seq_len, num_targets)
 
     if build_success == false then
         print('Invalid model')
@@ -112,7 +121,7 @@ end
 local epoch = 1
 local epoch_best = 1
 local valid_best = math.huge
-local batcher = Batcher:__init(train_seqs, train_targets, batch_size, true)
+local batcher = Batcher:__init(train_seqs, train_targets, batch_size)
 
 while epoch - epoch_best <= opt.stagnant_t do
     io.write(string.format("Epoch #%3d   ", epoch))
@@ -168,3 +177,5 @@ if opt.spearmint ~= '' then
     result_out:write(valid_best, '\n')
     result_out:close()
 end
+
+data_open:close()

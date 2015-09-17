@@ -10,8 +10,7 @@ end
 
 metrics = require 'metrics'
 
-require 'batcher'
-require 'batcherx'
+require 'batcher_hdf5'
 
 ConvNet = {}
 
@@ -22,7 +21,7 @@ function ConvNet:__init()
     return obj
 end
 
-function ConvNet:build(job, seqs, targets, target_labels)
+function ConvNet:build(job, init_depth, init_len, num_targets)
     -- parse network structure parameters
     self:setStructureParams(job)
 
@@ -30,10 +29,9 @@ function ConvNet:build(job, seqs, targets, target_labels)
     self.model = nn.Sequential()
 
     -- store useful values
-    self.num_targets = (#targets)[2]
-    self.target_labels = target_labels
-    depth = (#seqs)[2]
-    seq_len = (#seqs)[4]
+    self.num_targets = num_targets
+    local depth = init_depth
+    local seq_len = init_len
 
     -- convolution layers
     for i = 1,self.conv_layers do
@@ -67,19 +65,7 @@ function ConvNet:build(job, seqs, targets, target_labels)
         -- pooling
         if self.pool_width[i] > 1 then
             if self.pool_op == "max" then
-                -- just cannot get this to work
-                -- any use of nn.Padding destroys the model
-                -- even though the module seems to do the right thing
-
-                -- pad to pool evenly
-                -- pseq_len = math.ceil(seq_len / self.pool_width[i])
-                -- pad = self.pool_width[i]*pseq_len - seq_len
-                -- if pad > 0 then
-                -- 	-- self.model:add(nn.Padding(4, pad))
-                -- 	self.model:add(nn.Padding(3, pad, 3, -math.huge))
-                -- end
-
-                -- trimming version does work
+                -- trimming the seq
                 pseq_len = math.floor(seq_len / self.pool_width[i])
                 self.model:add(nn.SpatialMaxPooling(self.pool_width[i], 1))
             else
@@ -128,9 +114,9 @@ function ConvNet:build(job, seqs, targets, target_labels)
     if self.target_type == "binary" then
         -- final layer w/ target priors as initial biases
         final_linear = nn.Linear(hidden_in, self.num_targets)
-        target_priors = targets:mean(1):squeeze()
-        biases_init = -torch.log(torch.pow(target_priors, -1) - 1)
-        final_linear.bias = biases_init
+        -- target_priors = targets:mean(1):squeeze()
+        -- biases_init = -torch.log(torch.pow(target_priors, -1) - 1)
+        -- final_linear.bias = biases_init
         self.model:add(final_linear)
         self.model:add(nn.Sigmoid())
 
@@ -168,7 +154,7 @@ function ConvNet:build(job, seqs, targets, target_labels)
     -- print model summary
     print(self.model)
 
--- turns out the following code breaks the program, but it's
+-- the following code breaks the program, but it's
 -- interesting to see those counts!
 
 -- print(string.format("Sum:      %7d parameters",(#self.parameters)[1]))
@@ -236,13 +222,13 @@ end
 --
 -- Predict targets for a new set of sequences.
 ----------------------------------------------------------------
-function ConvNet:predict(X, batch_size)
-    -- track predictions across batches
-    local preds = torch.Tensor((#X)[1], self.num_targets)
-    local pi = 1
-
+function ConvNet:predict(Xf, batch_size)
     local bs = batch_size or self.batch_size
-    local batcher = BatcherX:__init(X, bs)
+    local batcher = Batcher:__init(X, nil, bs)
+
+    -- track predictions across batches
+    local preds = torch.Tensor(batcher.num_seqs, self.num_targets)
+    local pi = 1
 
     -- get first batch
     local Xb = batcher:next()
@@ -440,6 +426,9 @@ end
 function ConvNet:train_epoch(batcher)
     local total_loss = 0
 
+    -- collect garbage occasionaly
+    local cgi = 0
+
     -- get first batch
     local inputs, targets = batcher:next()
 
@@ -497,13 +486,19 @@ function ConvNet:train_epoch(batcher)
 
         -- next batch
         inputs, targets = batcher:next()
+
+        -- collect garbage occasionaly
+        cgi = cgi + 1
+        if cgi % 100 == 0 then
+            collectgarbage()
+        end
     end
 
     -- reset batcher
     batcher:reset()
 
     -- mean loss over examples
-    avg_loss = total_loss / (#batcher.X)[1]
+    avg_loss = total_loss / batcher.num_seqs
     return avg_loss
 end
 
@@ -513,17 +508,20 @@ end
 --
 -- Predict targets for X and compare to Y.
 ----------------------------------------------------------------
-function ConvNet:test(X, Y, batch_size)
+function ConvNet:test(Xf, Yf, batch_size)
     -- track the loss across batches
     local loss = 0
 
-    -- track predictions across batches
-    local preds = torch.Tensor(#Y)
-    local pi = 1
+    -- collect garbage occasionaly
+    local cgi = 0
 
     -- create a batcher to help
     local batch_size = batch_size or self.batch_size
-    local batcher = Batcher:__init(X, Y, batch_size)
+    local batcher = Batcher:__init(Xf, Yf, batch_size)
+
+    -- track predictions across batches
+    local preds = torch.Tensor(batcher.num_seqs, self.num_targets)
+    local pi = 1
 
     -- get first batch
     local inputs, targets = batcher:next()
@@ -550,23 +548,37 @@ function ConvNet:test(X, Y, batch_size)
 
         -- next batch
         inputs, targets = batcher:next()
+
+        -- collect garbage occasionaly
+        cgi = cgi + 1
+        if cgi % 100 == 0 then
+            collectgarbage()
+        end
     end
 
     -- mean loss over examples
-    local avg_loss = loss / (#X)[1]
+    local avg_loss = loss / batcher.num_seqs
 
     -- save pred means and stds
     self.pred_means = preds:mean(1):squeeze()
     self.pred_stds = preds:std(1):squeeze()
 
-    local Ydim = (#Y)[2]
+    local Ydim = batcher.num_targets
     if self.target_type == "binary" then
         -- compute AUC
         local AUCs = torch.Tensor(Ydim)
         local roc_points = {}
         for yi = 1,Ydim do
-            roc_points[yi] = metrics.ROC.points(preds[{{},yi}], Y[{{},yi}])
+            -- read Yi from file
+            local Yi = Yf:partial({1,batcher.num_seqs},{Ydim,Ydim}):squeeze()
+
+            -- compute ROC points
+            roc_points[yi] = metrics.ROC.points(preds[{{},yi}], Yi)
+
+            -- compute AUCs
             AUCs[yi] = metrics.ROC.area(roc_points[yi])
+
+            collectgarbage()
         end
 
         return avg_loss, AUCs, roc_points
