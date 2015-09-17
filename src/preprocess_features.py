@@ -354,7 +354,7 @@ class Peak:
         self.start = max(0, mid - ext_len/2)
         self.end = self.start + ext_len
         if chrom_len and self.end > chrom_len:
-            self.end = chrom_len+1
+            self.end = chrom_len
             self.start = self.end - ext_len
 
     def bed_str(self, chrom, strand):
@@ -394,7 +394,7 @@ class Peak:
         merge_start = max(0, merge_mid - ext_len/2)
         merge_end = merge_start + ext_len
         if chrom_len and merge_end > chrom_len:
-            merge_end = chrom_len+1
+            merge_end = chrom_len
             merge_start = merge_end - ext_len
 
         # merge activities
