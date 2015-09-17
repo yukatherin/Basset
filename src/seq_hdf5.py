@@ -44,6 +44,9 @@ def main():
     #################################################################
     seqs, targets = dna_io.load_data_1hot(fasta_file, targets_file, mean_norm=False, whiten=False, permute=False, sort=False)
 
+    # reshape sequences for torch
+    seqs = seqs.reshape((seqs.shape[0],4,1,seqs.shape[1]/4))
+
     headers = []
     for line in open(fasta_file):
         if line[0] == '>':
@@ -56,7 +59,6 @@ def main():
         order = npr.permutation(seqs.shape[0])
         seqs = seqs[order]
         targets = targets[order]
-        headers = headers[order]
 
     # check proper sum
     if options.counts:

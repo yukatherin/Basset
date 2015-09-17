@@ -121,7 +121,6 @@ def dna_one_hot(seq, seq_len=None):
 
     # flatten and make a column vector 1 x len(seq)
     seq_vec = seq_code.flatten()[None,:]
-    #seq_vec = seq_code.flatten('F')
 
     return seq_vec
 
