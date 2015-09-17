@@ -2,7 +2,7 @@
 
 require 'hdf5'
 
-require 'batcher_hdf5'
+require 'batcher'
 
 ----------------------------------------------------------------
 -- parse arguments
@@ -29,7 +29,7 @@ torch.manualSeed(opt.seed)
 
 -- set cpu/gpu
 cuda = opt.cuda
-require 'convnet_hdf5'
+require 'convnet'
 
 ----------------------------------------------------------------
 -- load data

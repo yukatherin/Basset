@@ -1,14 +1,21 @@
 Batcher = {}
 Batcher.__index = Batcher
 
-function Batcher:__init(X, Y, batch_size, permute)
+function Batcher:__init(Xf, Yf, batch_size)
     bat = {}
     setmetatable(bat, self)
 
-    bat.X = X
-    bat.Y = Y
+    bat.Xf = Xf
+    bat.num_seqs = Xf:dataspaceSize()[1]
+    bat.init_depth = Xf:dataspaceSize()[2]
+    bat.seq_len = Xf:dataspaceSize()[4]
+
+    bat.Yf = Yf
+    if bat.Yf ~= nil then
+        bat.num_targets = Yf:dataspaceSize()[2]
+    end
+
     bat.batch_size = batch_size or 200
-    bat.permute = permute or false
 
     bat:reset()
 
@@ -19,23 +26,16 @@ function Batcher:next()
     local X_batch = nil
     local Y_batch = nil
 
-    if self.start <= (#self.X)[1] then
-        -- allocate Tensors
-        local blen = self.stop-self.start+1
-        X_batch = torch.Tensor(blen, 4, 1, (#self.X)[4])
-        Y_batch = torch.Tensor(blen, (#self.Y)[2])
-
-        -- copy data
-        local k = 1
-        for i = self.start, self.stop do
-            X_batch[k] = self.X[self.order[i]]
-            Y_batch[k] = self.Y[self.order[i]]
-            k = k + 1
+    if self.start <= self.num_seqs then
+        -- get data
+        X_batch = self.Xf:partial({self.start,self.stop}, {1,self.init_depth}, {1,1}, {1,self.seq_len}):double()
+        if self.Yf ~= nil then
+            Y_batch = self.Yf:partial({self.start,self.stop}, {1,self.num_targets}):double()
         end
 
         -- update batch indexes for next
         self.start = self.start + self.batch_size
-        self.stop = math.min(self.stop + self.batch_size, (#self.X)[1])
+        self.stop = math.min(self.stop + self.batch_size, self.num_seqs)
     end
 
     return X_batch, Y_batch
@@ -43,14 +43,5 @@ end
 
 function Batcher:reset()
     self.start = 1
-    self.stop = math.min(self.start+self.batch_size-1, (#self.X)[1])
-
-    if self.permute then
-        self.order = torch.randperm((#self.X)[1])
-    else
-        self.order = {}
-        for i = 1,(#self.X)[1] do
-            self.order[i] = i
-        end
-    end
+    self.stop = math.min(self.start+self.batch_size-1, self.num_seqs)
 end

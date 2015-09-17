@@ -10,7 +10,7 @@ end
 
 metrics = require 'metrics'
 
-require 'batcher_hdf5'
+require 'batcher'
 
 ConvNet = {}
 
