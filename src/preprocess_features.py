@@ -40,15 +40,16 @@ def main():
     # determine whether we'll add to an existing DB
     db_targets = []
     db_add = False
-    if (options.db_bed and not options.db_act_file) or (not options.db_bed and options.db_act_file):
-    	parser.error('Must provide both BED file and activity table if you want to add to an existing database')
-    elif options.db_bed and options.db_act_file:
-    	db_add = True
+    if options.db_bed:
+        db_add = True
         if not options.no_db_activity:
-            # read db target names
-            db_act_in = open(options.db_act_file)
-            db_targets = db_act_in.readline().split('\t')[1:]
-            db_act_in.close()
+            if options.db_act_file is None:
+                parser.error('Must provide both activity table or specify -n if you want to add to an existing database')
+            else:
+                # read db target names
+                db_act_in = open(options.db_act_file)
+                db_targets = db_act_in.readline().split('\t')[1:]
+                db_act_in.close()
 
     # read in targets and assign them indexes into the db
     target_beds = []
