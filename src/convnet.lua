@@ -570,7 +570,7 @@ function ConvNet:test(Xf, Yf, batch_size)
         local roc_points = {}
         for yi = 1,Ydim do
             -- read Yi from file
-            local Yi = Yf:partial({1,batcher.num_seqs},{Ydim,Ydim}):squeeze()
+            local Yi = Yf:partial({1,batcher.num_seqs},{yi,yi}):squeeze()
 
             -- compute ROC points
             roc_points[yi] = metrics.ROC.points(preds[{{},yi}], Yi)
