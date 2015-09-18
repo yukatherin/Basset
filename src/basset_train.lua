@@ -48,12 +48,13 @@ local num_targets = train_targets:dataspaceSize()[2]
 ----------------------------------------------------------------
 -- construct model
 ----------------------------------------------------------------
+local job = {}
+
 -- general paramters
-local batch_size = 128
+job.batch_size = 128
 
 -- get parameters from whetlab
 local scientist = nil
-local job = {}
 if opt.spearmint == '' then
     job.conv_filters = {100,75,100}
     job.conv_filter_sizes = {19,11,7}
