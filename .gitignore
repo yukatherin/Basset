@@ -3,3 +3,8 @@
 data/encode*
 data/roadmap*
 data/sample_beds.txt
+tutorials/*.bed
+tutorials/*.fa
+tutorials/*.h5
+tutorials/*.txt
+tutorials/.ipynb_checkpoints
