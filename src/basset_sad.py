@@ -70,11 +70,6 @@ def main():
         seq_preds.append(np.array([float(p) for p in line.split()]))
     seq_preds = np.array(seq_preds)
 
-    # TEMP! TMP! once the new models with labels finish, use this
-    #            and update downstream code to reflect the panda
-    #            and use the target labels.
-    # seq_preds = pd.read_csv('%s/model_out.txt', sep='\t')
-
 
     #################################################################
     # collect and print SADs
