@@ -16,10 +16,11 @@ cmd:argument('data_file')
 cmd:text()
 cmd:text('Options:')
 cmd:option('-cuda', false, 'Run on GPGPU')
+cmd:option('-job', '', 'Table of job hyper-parameters')
 cmd:option('-restart', '', 'Restart an interrupted training')
+cmd:option('-result', '', 'Write the loss to this file (useful for Bayes Opt)')
 cmd:option('-save', 'dnacnn', 'Prefix for saved models')
 cmd:option('-seed', 1, 'RNG seed')
-cmd:option('-spearmint', '', 'Spearmint job id')
 cmd:option('-stagnant_t', 10, 'Allowed epochs with stagnant validation')
 cmd:text()
 opt = cmd:parse(arg)
@@ -50,12 +51,10 @@ local num_targets = train_targets:dataspaceSize()[2]
 ----------------------------------------------------------------
 local job = {}
 
--- general paramters
-job.batch_size = 128
-
--- get parameters from whetlab
+-- get parameters
 local scientist = nil
-if opt.spearmint == '' then
+if opt.job == '' then
+    print("Hyper-parameters unspecified. Applying a small model architecture")
     job.conv_filters = {100,75,100}
     job.conv_filter_sizes = {19,11,7}
     job.pool_width = {3,4,4}
@@ -63,9 +62,8 @@ if opt.spearmint == '' then
     job.hidden_units = {500,500}
     job.hidden_dropouts = {0.5,0.5}
 else
-    local params_file = string.format('job%s_params.txt', opt.spearmint)
-    local params_in = io.open(params_file, 'r')
-    local line = params_in:read()
+    local job_in = io.open(opt.job, 'r')
+    local line = job_in:read()
     while line ~= nil do
         for k, v in string.gmatch(line, "([%w%p]+)%s+([%w%p]+)") do
             -- if key already exsits
@@ -83,9 +81,9 @@ else
                 job[k] = tonumber(v)
             end
         end
-        line = params_in:read()
+        line = job_in:read()
     end
-    params_in:close()
+    job_in:close()
 
     print(job)
 end
@@ -97,6 +95,7 @@ local build_success = true
 if opt.restart ~= '' then
     local convnet_params = torch.load(opt.restart)
     convnet:load(convnet_params)
+    convnet.model:training()
 else
     build_success = convnet:build(job, init_depth, seq_len, num_targets)
 
@@ -104,10 +103,9 @@ else
         print('Invalid model')
 
         -- update spearmint
-        if opt.spearmint ~= '' then
+        if opt.result ~= '' then
             -- print result to file
-            local result_file = string.format('job%s_result.txt', opt.spearmint)
-            local result_out = io.open(result_file, 'w')
+            local result_out = io.open(opt.result, 'w')
             result_out:write('1000000\n')
             result_out:close()
         end
@@ -171,10 +169,9 @@ while epoch - epoch_best <= opt.stagnant_t do
     print('')
 end
 
-if opt.spearmint ~= '' then
+if opt.result ~= '' then
     -- print result to file
-    local result_file = string.format('job%s_result.txt', opt.spearmint)
-    local result_out = io.open(result_file, 'w')
+    local result_out = io.open(opt.result, 'w')
     result_out:write(valid_best, '\n')
     result_out:close()
 end

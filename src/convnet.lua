@@ -1,5 +1,5 @@
-require 'nn'
 require 'dpnn'
+require 'nn'
 require 'inn'
 require 'optim'
 
@@ -301,7 +301,7 @@ function ConvNet:setStructureParams(job)
     self.num_epochs = job.num_epochs or 1000
 
     -- number of examples per weight update
-    self.batch_size = job.batch_size or 128
+    self.batch_size = job.batch_size or 200
 
     -- base learning rate
     self.learning_rate = job.learning_rate or 0.002
