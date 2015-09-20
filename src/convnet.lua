@@ -11,6 +11,7 @@ end
 metrics = require 'metrics'
 
 require 'batcher'
+require 'batcherT'
 
 ConvNet = {}
 
@@ -222,9 +223,14 @@ end
 --
 -- Predict targets for a new set of sequences.
 ----------------------------------------------------------------
-function ConvNet:predict(Xf, batch_size)
+function ConvNet:predict(Xf, batch_size, Xtens)
     local bs = batch_size or self.batch_size
-    local batcher = Batcher:__init(X, nil, bs)
+    local batcher
+    if Xtens then
+        batcher = BatcherT:__init(Xf, nil, bs)
+    else
+        batcher = Batcher:__init(Xf, nil, bs)
+    end
 
     -- track predictions across batches
     local preds = torch.Tensor(batcher.num_seqs, self.num_targets)
@@ -251,6 +257,8 @@ function ConvNet:predict(Xf, batch_size)
 
         -- next batch
         Xb = batcher:next()
+
+        collectgarbage()
     end
 
     return preds

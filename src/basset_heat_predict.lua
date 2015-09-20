@@ -4,7 +4,6 @@ require 'cunn'
 require 'cutorch'
 require 'hdf5'
 
-require 'batcherX'
 require 'convnet'
 require 'convnet_io'
 require 'postprocess'
@@ -25,7 +24,6 @@ cmd:text('Options:')
 cmd:option('-center_nt', 0, 'Mutate only the center nucleotides')
 cmd:option('-pre_sigmoid', false, 'Measure changes pre-sigmoid')
 cmd:option('-raw_prob', false, 'Measure raw probabilities')
-cmd:option('-sample', 0, 'Sequences to sample')
 opt = cmd:parse(arg)
 
 -- fix seed
@@ -39,18 +37,12 @@ local convnet = ConvNet:__init()
 convnet:load(convnet_params)
 convnet:decuda()
 
-local test_seqs = load_test_seqs(opt.data_file)
+-- open HDF5 and get test sequences
+local data_open = hdf5.open(opt.data_file, 'r')
+local test_seqs = data_open:read('test_in')
 
--- down sample
-local sample = opt.sample
-if sample == 0 or sample > (#test_seqs)[1] then
-	sample = (#test_seqs)[1]
-end
-local batcher = BatcherX:__init(test_seqs, sample)
-local X = batcher:next()
-
-local num_seqs = (#X)[1]
-local seq_len = (#X)[4]
+local num_seqs = test_seqs:dataspaceSize()[1]
+local seq_len = test_seqs:dataspaceSize()[4]
 local nts = {'A','C','G','T'}
 
 -- final layer index
@@ -61,7 +53,7 @@ local fl = #convnet.model.modules - 1
 ----------------------------------------------------------------
 -- predict seqs
 convnet.model:evaluate()
-local preds = convnet:predict(X, num_seqs)
+local preds = convnet:predict(test_seqs, num_seqs)
 local num_targets = (#preds)[2]
 
 -- normalize predictions
@@ -89,11 +81,12 @@ local num_mods = 3*delta_len
 -- initialize a data structure for modified predictions
 local seq_mod_preds = torch.DoubleTensor(num_seqs, 4, delta_len, num_targets)
 
-for si=1,num_seqs do
-	local seq_1hot = X[{si,{},{},{}}]
+-- pre-allocate a Tensor of modified sequnces
+local seq_mods = torch.Tensor(num_mods, 4, 1, seq_len)
 
-	-- pre-allocate a Tensor of modified sequnces
-	local seq_mods = torch.Tensor(num_mods, 4, 1, seq_len)
+for si=1,num_seqs do
+    local seq_1hot = test_seqs:partial({si,si},{1,4},{1,1},{1,seq_len})
+    seq_1hot = seq_1hot:reshape(4, 1, seq_len)
 
 	-- construct a batch of modified sequecnes
 	local mi = 1
@@ -113,7 +106,7 @@ for si=1,num_seqs do
 	end
 
 	-- predict modified sequences
-	local mod_preds = convnet:predict(seq_mods, num_mods)
+	local mod_preds = convnet:predict(seq_mods, num_mods, true)
     local mod_prepreds = convnet.model.modules[fl].output:clone()
 
     -- normalize predictions

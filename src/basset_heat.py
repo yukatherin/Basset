@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from optparse import OptionParser
-import copy, os, pdb, subprocess, sys
+import copy, os, pdb, random, subprocess, sys
 
 import h5py
 import numpy as np
@@ -44,9 +44,11 @@ def main():
     # parse input file
     #################################################################
     try:
+        # input_file is FASTA
+
         # load sequences and headers
         seqs = dna_io.fasta2dict(input_file)
-        seq_headers = seqs.keys()
+        seq_headers = np.array(seqs.keys())
 
         model_input_hdf5 = '%s/model_in.h5'%options.out_dir
 
@@ -55,41 +57,57 @@ def main():
             seqs_1hot, targets = dna_io.load_data_1hot(input_file, options.input_activity_file, mean_norm=False, whiten=False, permute=False, sort=False)
 
             # read in target names
-            target_names = open(options.input_activity_file).readline().strip().split('\t')
-
-            # write as test data to a HDF5 file
-            #  (save everything so the user can just input this next time)
-            h5f = h5py.File(model_input_hdf5, 'w')
-            h5f.create_dataset('target_names', data=target_names)
-            h5f.create_dataset('test_in', data=seqs_1hot)
-            h5f.create_dataset('test_out', data=targets)
-            h5f.create_dataset('test_headers', data=seq_headers)
-            h5f.close()
+            target_labels = open(options.input_activity_file).readline().strip().split('\t')
 
         else:
-            # load sequences and headers
+            # load sequences
             seqs_1hot = dna_io.load_sequences(input_file, permute=False)
+            targets = None
+            target_labels = None
 
-            # write as test data to a HDF5 file
-            h5f = h5py.File(model_input_hdf5, 'w')
-            h5f.create_dataset('test_in', data=seqs_1hot)
-            h5f.close()
+        # sample
+        if options.sample:
+            sample_i = np.array(random.sample(xrange(seqs_1hot.shape[0]), options.sample))
+            seqs_1hot = seqs_1hot[sample_i]
+            seq_headers = seq_headers[sample_i]
+            if targets is not None:
+                targets = targets[sample_i]
+
+        # write as test data to a HDF5 file
+        h5f = h5py.File(model_input_hdf5, 'w')
+        h5f.create_dataset('test_in', data=seqs_1hot)
+        h5f.close()
 
     except (IOError, KeyError):
+        # input_file is HDF5
+
         try:
             model_input_hdf5 = input_file
 
             # load (sampled) test data from HDF5
             hdf5_in = h5py.File(input_file, 'r')
-            seqs_1hot = np.array(hdf5_in['test_in'])[:options.sample,:]
-            targets = np.array(hdf5_in['test_out'])[:options.sample,:]
+            seqs_1hot = np.array(hdf5_in['test_in'])
+            targets = np.array(hdf5_in['test_out'])
             try: # TEMP
-                seq_headers = list(hdf5_in['test_headers'])[:options.sample]
-                target_names = list(hdf5_in['target_names'])
+                seq_headers = np.array(hdf5_in['test_headers'])
+                target_labels = np.array(hdf5_in['target_labels'])
             except:
                 seq_headers = None
-                target_names = None
+                target_labels = None
             hdf5_in.close()
+
+            # sample
+            if options.sample:
+                sample_i = np.array(random.sample(xrange(seqs_1hot.shape[0]), options.sample))
+                seqs_1hot = seqs_1hot[sample_i]
+                seq_headers = seq_headers[sample_i]
+                targets = targets[sample_i]
+
+                # write sampled data to a new HDF5 file
+                model_input_hdf5 = '%s/model_in.h5'%options.out_dir
+                h5f = h5py.File(model_input_hdf5, 'w')
+                h5f.create_dataset('test_in', data=seqs_1hot)
+                h5f.close()
 
             # convert to ACGT sequences
             seqs = dna_io.vecs2dna(seqs_1hot)
@@ -103,7 +121,7 @@ def main():
     #################################################################
     if options.torch_out_hdf5 is None:
         options.torch_out_hdf5 = '%s/model_out.h5' % options.out_dir
-        torch_cmd = 'basset_heat_predict.lua -sample %d -center_nt %d %s %s %s' % (options.sample, options.center_nt, model_file, model_input_hdf5, options.torch_out_hdf5)
+        torch_cmd = 'basset_heat_predict.lua -center_nt %d %s %s %s' % (options.center_nt, model_file, model_input_hdf5, options.torch_out_hdf5)
         print torch_cmd
         subprocess.call(torch_cmd, shell=True)
 
