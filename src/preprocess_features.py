@@ -55,7 +55,11 @@ def main():
     target_beds = []
     target_dbi = []
     for line in open(target_beds_file):
-    	a = line.rstrip().split('\t')
+    	a = line.split()
+        if len(a) != 2:
+            print a
+            print >> sys.stderr, 'Each row of the target BEDS file must contain a label and BED file separated by whitespace'
+            exit(1)
     	target_dbi.append(len(db_targets))
     	db_targets.append(a[0])
     	target_beds.append(a[1])
