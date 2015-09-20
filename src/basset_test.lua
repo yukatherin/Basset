@@ -1,10 +1,10 @@
 #!/usr/bin/env th
 
+require 'hdf5'
 require 'lfs'
 
 require 'batcher'
 require 'convnet'
-require 'convnet_io'
 
 ----------------------------------------------------------------
 -- parse arguments
@@ -29,7 +29,9 @@ torch.manualSeed(opt.seed)
 ----------------------------------------------------------------
 -- load data
 ----------------------------------------------------------------
-local test_seqs, test_scores = load_test(opt.data_file)
+local data_open = hdf5.open(opt.data_file, 'r')
+local test_targets = data_open:read('test_out')
+local test_seqs = data_open:read('test_in')
 
 ----------------------------------------------------------------
 -- construct model
@@ -48,7 +50,7 @@ convnet:load(convnet_params)
 convnet.model:evaluate()
 
 -- measure accuracy on a test set
-local loss, AUCs, roc_points = convnet:test(test_seqs, test_scores)
+local loss, AUCs, roc_points = convnet:test(test_seqs, test_targets)
 local avg_auc = torch.mean(AUCs)
 
 -- cd to output dir
@@ -77,3 +79,5 @@ for yi=1,#roc_points do
     end
     roc_out:close()
 end
+
+data_open:close()
