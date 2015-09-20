@@ -16,6 +16,7 @@ import sys
 def main():
     usage = 'usage: %prog [options] <db_bed> <db_act_file> <sample_seqs> <output_prefix>'
     parser = OptionParser(usage)
+    parser.add_option('-s', dest='seed', default=1, type='float', help='Random number generator seed [Default: %default]')
     (options,args) = parser.parse_args()
 
     if len(args) != 4:
@@ -26,7 +27,7 @@ def main():
         sample_seqs = int(args[2])
         out_pre = args[3]
 
-    random.seed(1)
+    random.seed(options.seed)
 
     ############################################################
     # process BED
