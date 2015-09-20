@@ -1,7 +1,8 @@
 #!/usr/bin/env th
 
+require 'hdf5'
+
 require 'convnet'
-require 'convnet_io'
 require 'postprocess'
 
 ----------------------------------------------------------------
@@ -24,7 +25,8 @@ opt = cmd:parse(arg)
 ----------------------------------------------------------------
 -- load data
 ----------------------------------------------------------------
-local test_seqs = load_test_seqs(opt.data_file)
+local data_open = hdf5.open(opt.data_file, 'r')
+local test_seqs = data_open:read('test_in')
 
 ----------------------------------------------------------------
 -- construct model
@@ -54,19 +56,13 @@ if opt.norm then
     preds = troy_norm(preds, convnet.pred_means)
 end
 
+-- close HDF5
+data_open:close()
+
 ----------------------------------------------------------------
 -- dump to file
 ----------------------------------------------------------------
 local predict_out = io.open(opt.out_file, 'w')
-
--- print labels
-if convnet.target_labels ~= nil then   -- TEMP! TMP!
-    predict_out:write(convnet.target_labels[1])
-    for ti=2,(#convnet.target_labels) do
-        predict_out:write(string.format("\t%s",convnet.target_labels[ti]))
-    end
-    predict_out:write("\n")
-end
 
 -- print predictions
 for si=1,(#preds)[1] do
