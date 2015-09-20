@@ -379,6 +379,8 @@ def vecs2dna(seq_vecs):
     # possibly reshape
     if len(seq_vecs.shape) == 2:
         seq_vecs = np.reshape(seq_vecs, (seq_vecs.shape[0], 4, -1))
+    elif len(seq_vecs.shape) == 4:
+        seq_vecs = np.reshape(seq_vecs, (seq_vecs.shape[0], 4, -1))
 
     seqs = []
     for i in range(seq_vecs.shape[0]):
