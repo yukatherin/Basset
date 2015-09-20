@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from optparse import OptionParser
-import copy, os, pdb, shutil, subprocess, time
+import copy, os, pdb, random, shutil, subprocess, time
 
 import h5py
 import matplotlib
@@ -32,7 +32,7 @@ def main():
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5.')
     parser.add_option('-o', dest='out_dir', default='.')
     parser.add_option('-m', dest='meme_db', default='~/software/meme_4.10.1/motif_databases/CIS-BP/Homo_sapiens.meme')
-    parser.add_option('-s', dest='sample', default=1000, type='int', help='Sample sequences from the test set [Default:%default]')
+    parser.add_option('-s', dest='sample', default=None, type='int', help='Sample sequences from the test set [Default:%default]')
     (options,args) = parser.parse_args()
 
     if len(args) != 2:
@@ -45,31 +45,52 @@ def main():
         os.mkdir(options.out_dir)
 
     #################################################################
-    # Torch predict
-    #################################################################
-    if options.model_hdf5_file is None:
-        options.model_hdf5_file = '%s/model_out.h5' % options.out_dir
-        torch_cmd = 'basset_motifs_predict.lua -sample %d %s %s %s' % (options.sample, model_file, test_hdf5_file, options.model_hdf5_file)
-        subprocess.call(torch_cmd, shell=True)
-
-
-    #################################################################
     # load data
     #################################################################
     # load sequences
     test_hdf5_in = h5py.File(test_hdf5_file, 'r')
-    seq_vecs = np.array(test_hdf5_in['test_in'])[:options.sample,:]
-    seq_targets = np.array(test_hdf5_in['test_out'])[:options.sample,:]
+    seq_vecs = np.array(test_hdf5_in['test_in'])
+    seq_targets = np.array(test_hdf5_in['test_out'])
     try:
-        target_names = list(test_hdf5_in['target_names'])
+        target_names = list(test_hdf5_in['target_labels'])
     except KeyError:
         # TEMP TEMP TEMP
         # target_names = [str(x) for x in range(125)]
         target_names = [line.split()[1] for line in open('../data/cell_activity.txt')]
     test_hdf5_in.close()
 
+
+    #################################################################
+    # sample
+    #################################################################
+    if options.sample is not None:
+        # choose sampled indexes
+        sample_i = np.array(random.sample(xrange(seq_vecs.shape[0]), options.sample))
+
+        # filter
+        seq_vecs = seq_vecs[sample_i]
+        seq_targets = seq_targets[sample_i]
+
+        # create a new HDF5 file
+        sample_hdf5_file = '%s/sample.h5' % options.out_dir
+        sample_hdf5_out = h5py.File(sample_hdf5_file, 'w')
+        sample_hdf5_out.create_dataset('test_in', data=seq_vecs)
+        sample_hdf5_out.close()
+
+        # update test HDF5
+        test_hdf5_file = sample_hdf5_file
+
     # convert to letters
     seqs = dna_io.vecs2dna(seq_vecs)
+
+
+    #################################################################
+    # Torch predict
+    #################################################################
+    if options.model_hdf5_file is None:
+        options.model_hdf5_file = '%s/model_out.h5' % options.out_dir
+        torch_cmd = 'basset_motifs_predict.lua %s %s %s' % (model_file, test_hdf5_file, options.model_hdf5_file)
+        subprocess.call(torch_cmd, shell=True)
 
     # load model output
     model_hdf5_in = h5py.File(options.model_hdf5_file, 'r')
@@ -80,6 +101,7 @@ def main():
     # store useful variables
     num_filters = filter_weights.shape[0]
     filter_size = filter_weights.shape[2]
+
 
     #################################################################
     # individual filter plots
@@ -117,10 +139,11 @@ def main():
     # annotate filters
     #################################################################
     # run tomtom
-    subprocess.call('tomtom -thresh 0.1 -oc %s/tomtom %s/filters_meme.txt %s' % (options.out_dir, options.out_dir, options.meme_db), shell=True)
+    subprocess.call('tomtom -dist el -thresh 0.1 -oc %s/tomtom %s/filters_meme.txt %s' % (options.out_dir, options.out_dir, options.meme_db), shell=True)
 
     # read in annotations
     filter_names = name_filters(num_filters, '%s/tomtom/tomtom.txt'%options.out_dir, options.meme_db)
+
 
     #################################################################
     # print a table of information
@@ -157,8 +180,8 @@ def main():
     plot_filter_seq_heat(filter_outs, '%s/filter_seqs.pdf'%options.out_dir)
 
     # plot filter-segment heatmap
-    plot_filter_seg_heat(filter_outs)
-    plot_filter_seg_heat(filter_outs, whiten=False)
+    plot_filter_seg_heat(filter_outs, '%s/filter_segs.pdf'%options.out_dir)
+    plot_filter_seg_heat(filter_outs, '%s/filter_segs_raw.pdf'%options.out_dir, whiten=False)
 
     # plot filter-target correlation heatmap
     plot_target_corr(filter_outs, seq_targets, filter_names, target_names, '%s/filter_target_cors_mean.pdf'%options.out_dir, 'mean')
@@ -405,7 +428,7 @@ def plot_filter_seq_heat(filter_outs, out_pdf, whiten=True, drop_dead=True):
 # Input
 #  filter_outs
 ################################################################################
-def plot_filter_seg_heat(filter_outs, whiten=True, drop_dead=True):
+def plot_filter_seg_heat(filter_outs, out_pdf, whiten=True, drop_dead=True):
     b = filter_outs.shape[0]
     f = filter_outs.shape[1]
     l = filter_outs.shape[2]
@@ -443,10 +466,8 @@ def plot_filter_seg_heat(filter_outs, whiten=True, drop_dead=True):
 
     sns.set(font_scale=0.3)
     if whiten:
-        out_pdf = 'filter_segs.pdf'
         dist = 'euclidean'
     else:
-        out_pdf = 'filter_segs_raw.pdf'
         dist = 'cosine'
 
     plt.figure()

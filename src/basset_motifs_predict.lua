@@ -20,9 +20,6 @@ cmd:argument('model_file')
 cmd:argument('data_file')
 cmd:argument('out_file')
 cmd:text()
-cmd:text('Options:')
-cmd:option('-sample', 1000, 'Sample sequences to compute on')
-cmd:text()
 opt = cmd:parse(arg)
 
 -- fix seed
@@ -40,18 +37,18 @@ convnet:decuda()
 local conv_filters = convnet.conv_filters[1]
 local filter_size = convnet.conv_filter_sizes[1]
 
-local test_seqs = load_test_seqs(opt.data_file)
+-- open HDF5 and get test sequences
+local data_open = hdf5.open(opt.data_file, 'r')
+local test_seqs = data_open:read('test_in')
 
--- down sample
-local batcher = BatcherX:__init(test_seqs, opt.sample)
-local X = batcher:next()
+local num_seqs = test_seqs:dataspaceSize()[1]
 
 ----------------------------------------------------------------
 -- predict
 ----------------------------------------------------------------
 -- predict seqs
 convnet.model:evaluate()
-convnet:predict(X, opt.sample)
+convnet:predict(test_seqs, num_seqs)
 
 -- get convolution filter params
 local filter_weights = convnet.model.modules[1].weight:squeeze()
@@ -64,3 +61,5 @@ local hdf_out = hdf5.open(opt.out_file, 'w')
 hdf_out:write('weights', filter_weights)
 hdf_out:write('outs', filter_outs)
 hdf_out:close()
+
+data_open:close()
