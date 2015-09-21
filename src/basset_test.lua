@@ -4,7 +4,6 @@ require 'hdf5'
 require 'lfs'
 
 require 'batcher'
-require 'convnet'
 
 ----------------------------------------------------------------
 -- parse arguments
@@ -19,9 +18,14 @@ cmd:argument('data_file')
 cmd:argument('out_dir')
 cmd:text()
 cmd:text('Options:')
+cmd:option('-cuda', false, 'Run on GPGPU')
 cmd:option('-seed', 1, 'RNG seed')
 cmd:text()
 opt = cmd:parse(arg)
+
+-- set cpu/gpu
+cuda = opt.cuda
+require 'convnet'
 
 -- fix seed
 torch.manualSeed(opt.seed)

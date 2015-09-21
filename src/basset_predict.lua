@@ -2,7 +2,6 @@
 
 require 'hdf5'
 
-require 'convnet'
 require 'postprocess'
 
 ----------------------------------------------------------------
@@ -18,9 +17,14 @@ cmd:argument('data_file')
 cmd:argument('out_file')
 cmd:text()
 cmd:text('Options:')
+cmd:option('-cuda', false, 'Run on GPGPU')
 cmd:option('-norm', false, 'Normalize all targets to a level plane')
 cmd:text()
 opt = cmd:parse(arg)
+
+-- set cpu/gpu
+cuda = opt.cuda
+require 'convnet'
 
 ----------------------------------------------------------------
 -- load data
