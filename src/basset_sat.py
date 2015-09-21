@@ -128,7 +128,7 @@ def main():
     #################################################################
     if options.torch_out_hdf5 is None:
         options.torch_out_hdf5 = '%s/model_out.h5' % options.out_dir
-        torch_cmd = 'basset_heat_predict.lua -center_nt %d %s %s %s' % (options.center_nt, model_file, model_input_hdf5, options.torch_out_hdf5)
+        torch_cmd = 'basset_sat_predict.lua -center_nt %d %s %s %s' % (options.center_nt, model_file, model_input_hdf5, options.torch_out_hdf5)
         print torch_cmd
         subprocess.call(torch_cmd, shell=True)
 
