@@ -47,8 +47,14 @@ def main():
         # input_file is FASTA
 
         # load sequences and headers
-        seqs = dna_io.fasta2dict(input_file)
-        seq_headers = np.array(seqs.keys())
+        seqs = []
+        seq_headers = []
+        for line in open(input_file):
+            if line[0] == '>':
+                seq_headers.append(line[1:].rstrip())
+                seqs.append('')
+            else:
+                seqs[-1] += line.rstrip()
 
         model_input_hdf5 = '%s/model_in.h5'%options.out_dir
 
@@ -78,7 +84,7 @@ def main():
         h5f.create_dataset('test_in', data=seqs_1hot)
         h5f.close()
 
-    except (IOError, KeyError):
+    except (IOError, IndexError):
         # input_file is HDF5
 
         try:
@@ -112,6 +118,7 @@ def main():
             # convert to ACGT sequences
             seqs = dna_io.vecs2dna(seqs_1hot)
 
+
         except IOError:
             parser.error('Could not parse input file as FASTA or HDF5.')
 
@@ -134,13 +141,13 @@ def main():
     hdf5_in.close()
 
     # trim seqs to match seq_mod_preds length
-    seq_len = len(seqs[seq_headers[0]])
+    seq_len = len(seqs[0])
     delta_start = 0
     delta_len = seq_mod_preds.shape[2]
     if delta_len < seq_len:
         delta_start = (seq_len - delta_len)/2
-        for header in seq_headers:
-            seqs[header] = seqs[header][delta_start:delta_start+delta_len]
+        for i in range(len(seqs)):
+            seqs[i] = seqs[i][delta_start:delta_start+delta_len]
 
     # decide which cells to plot
     if options.cells == '-1':
@@ -159,7 +166,7 @@ def main():
     nts = 'ACGT'
     for si in range(seq_mod_preds.shape[0]):
         header = seq_headers[si]
-        seq = seqs[header]
+        seq = seqs[si]
 
         # plot some descriptive heatmaps for each individual cell type
         for ci in plot_cells:
@@ -188,7 +195,7 @@ def main():
             # print a WebLogo of the sequence
             vlim = max(options.min_limit, abs(minmax_matrix).max())
             seq_heights = 0.25 + 1.75/vlim*(-minmax_matrix[0])
-            logo_eps = '%s/%s_c%d_seq.eps' % (options.out_dir, header.replace(':','_'), ci)
+            logo_eps = '%s/%s_c%d_seq.eps' % (options.out_dir, header_filename(header), ci)
             seq_logo(seq, seq_heights, logo_eps)
 
             # add to figure
@@ -237,7 +244,20 @@ def main():
     table_out.close()
 
 
+def header_filename(header):
+    ''' Revise the FASTA header to be ba better filename '''
+    # no colons
+    header = header.replace(':','_')
+
+    # no parentheses
+    header = header.replace('(','_')
+    header = header.replace(')','')
+
+    return header
+
+
 def get_real_pred(seq_mod_preds, seq):
+    ''' Return the real sequence prediction from the modified prediction matrix '''
     si = 0
     while seq[si] == 'N':
         si += 1
