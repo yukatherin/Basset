@@ -27,7 +27,7 @@ cmd:text()
 opt = cmd:parse(arg)
 
 -- fix seed
-torch.manualSeed(opt.seed)
+torch.manualSeed(opt.rand)
 
 -- set cpu/gpu
 cuda = opt.cuda
@@ -96,8 +96,8 @@ local build_success = true
 if opt.restart ~= '' then
     local convnet_params = torch.load(opt.restart)
     convnet:load(convnet_params)
-else if opt.seed ~= '' then
-    local convnet_params = torch.load(opt.restart)
+elseif opt.seed ~= '' then
+    local convnet_params = torch.load(opt.seed)
     convnet:load(convnet_params)
     convnet:adjust_final(num_targets)
 else
