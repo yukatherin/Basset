@@ -20,7 +20,8 @@ cmd:option('-job', '', 'Table of job hyper-parameters')
 cmd:option('-restart', '', 'Restart an interrupted training')
 cmd:option('-result', '', 'Write the loss to this file (useful for Bayes Opt)')
 cmd:option('-save', 'dnacnn', 'Prefix for saved models')
-cmd:option('-seed', 1, 'RNG seed')
+cmd:option('-seed', '', 'Seed the model with the parameters of another')
+cmd:option('-rand', 1, 'Random number generator seed')
 cmd:option('-stagnant_t', 10, 'Allowed epochs with stagnant validation')
 cmd:text()
 opt = cmd:parse(arg)
@@ -95,7 +96,10 @@ local build_success = true
 if opt.restart ~= '' then
     local convnet_params = torch.load(opt.restart)
     convnet:load(convnet_params)
-    convnet.model:training()
+else if opt.seed ~= '' then
+    local convnet_params = torch.load(opt.restart)
+    convnet:load(convnet_params)
+    convnet:adjust_final(num_targets)
 else
     build_success = convnet:build(job, init_depth, seq_len, num_targets)
 
@@ -113,6 +117,8 @@ else
         os.exit()
     end
 end
+
+convnet.model:training()
 
 ----------------------------------------------------------------
 -- run

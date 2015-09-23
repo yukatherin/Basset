@@ -172,6 +172,64 @@ function ConvNet:build(job, init_depth, init_len, num_targets)
 end
 
 
+function ConvNet:adjust_final(num_targets)
+    -- re-specify num targets
+    self.num_targets = num_targets
+
+    if self.target_type == "binary" then
+        -- remove Sigmoid
+        self.model:remove()
+
+        -- save input size
+        local hidden_in = self.model.modules[#self.model].weight:size(2)
+
+        -- remove Linear
+        self.model:remove()
+
+        -- final layer
+        self.model:add(nn.Linear(hidden_in, self.num_targets))
+        self.model:add(nn.Sigmoid())
+
+    elseif self.target_type == "positive" then
+        -- remove ReLU
+        self.model:remove()
+
+        -- save input size
+        local hidden_in = self.model.modules[#self.model].weight:size(2)
+
+        -- remove Linear
+        self.model:remove()
+
+        -- final layer
+        self.model:add(nn.Linear(hidden_in, self.num_targets))
+        self.model:add(nn.ReLU())
+
+    else
+        -- save input size
+        local hidden_in = self.model.modules[#self.model].weight:size(2)
+
+        -- remove Linear
+        self.model:remove()
+
+        -- final layer
+        self.model:add(nn.Linear(hidden_in, self.num_targets))
+    end
+
+    -- cuda
+    if cuda then
+        print("Running on GPU.")
+        self.model:cuda()
+        self.criterion:cuda()
+    end
+
+    -- retrieve parameters and gradients
+    self.parameters, self.gradParameters = self.model:getParameters()
+
+    -- print model summary
+    print(self.model)
+end
+
+
 ----------------------------------------------------------------
 -- decuda
 --
