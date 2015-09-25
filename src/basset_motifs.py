@@ -21,7 +21,13 @@ import dna_io
 # of the given model using the given sequences.
 ################################################################################
 
-weblogo_opts = '-X NO -Y NO --errorbars NO --fineprint "" -c classic'
+# weblogo_opts = '-X NO -Y NO --errorbars NO --fineprint "" -c classic'
+
+weblogo_opts = '-X NO -Y NO --errorbars NO --fineprint ""'
+weblogo_opts += ' -C "#CB2026" A A'
+weblogo_opts += ' -C "#34459C" C C'
+weblogo_opts += ' -C "#FBB116" G G'
+weblogo_opts += ' -C "#0C8040" T T'
 
 ################################################################################
 # main
@@ -33,6 +39,7 @@ def main():
     parser.add_option('-o', dest='out_dir', default='.')
     parser.add_option('-m', dest='meme_db', default='~/software/meme_4.10.1/motif_databases/CIS-BP/Homo_sapiens.meme')
     parser.add_option('-s', dest='sample', default=None, type='int', help='Sample sequences from the test set [Default:%default]')
+    parser.add_option('-t', dest='trim_filters', default=False, action='store_true', help='Trim uninformative positions off the filter ends [Default: %default]')
     (options,args) = parser.parse_args()
 
     if len(args) != 2:
@@ -130,7 +137,7 @@ def main():
             filters_ic.append(info_content(filter_pwm))
 
             # add to the meme motif file
-            meme_add(meme_out, f, filter_pwm, nsites)
+            meme_add(meme_out, f, filter_pwm, nsites, options.trim_filters)
 
     meme_out.close()
 
@@ -139,7 +146,7 @@ def main():
     # annotate filters
     #################################################################
     # run tomtom
-    subprocess.call('tomtom -dist el -thresh 0.1 -oc %s/tomtom %s/filters_meme.txt %s' % (options.out_dir, options.out_dir, options.meme_db), shell=True)
+    subprocess.call('tomtom -dist pearson -thresh 0.1 -oc %s/tomtom %s/filters_meme.txt %s' % (options.out_dir, options.out_dir, options.meme_db), shell=True)
 
     # read in annotations
     filter_names = name_filters(num_filters, '%s/tomtom/tomtom.txt'%options.out_dir, options.meme_db)
@@ -240,7 +247,7 @@ def make_filter_pwm(filter_fasta):
     return np.array(pwm_freqs), nsites-4
 
 
-def meme_add(meme_out, f, filter_pwm, nsites):
+def meme_add(meme_out, f, filter_pwm, nsites, trim_filters=False):
     ''' Print a filter to the growing MEME file
 
     Attrs:
@@ -249,12 +256,29 @@ def meme_add(meme_out, f, filter_pwm, nsites):
         filter_pwm (array) : filter PWM array
         nsites (int) : number of filter sites
     '''
-    print >> meme_out, 'MOTIF filter%d' % f
-    print >> meme_out, 'letter-probability matrix: alength= 4 w= %d nsites= %d' % (len(filter_pwm), nsites)
+    if not trim_filters:
+        ic_start = 0
+        ic_end = filter_pwm.shape[0]-1
+    else:
+        ic_t = 0.2
 
-    for i in range(len(filter_pwm)):
-        print >> meme_out, '%.4f %.4f %.4f %.4f' % tuple(filter_pwm[i])
-    print >> meme_out, ''
+        # trim PWM of uninformative prefix
+        ic_start = 0
+        while ic_start < filter_pwm.shape[0] and info_content(filter_pwm[ic_start:ic_start+1]) < ic_t:
+            ic_start += 1
+
+        # trim PWM of uninformative suffix
+        ic_end = filter_pwm.shape[0]-1
+        while ic_end >= 0 and info_content(filter_pwm[ic_end:ic_end+1]) < ic_t:
+            ic_end -= 1
+
+    if ic_start < ic_end:
+        print >> meme_out, 'MOTIF filter%d' % f
+        print >> meme_out, 'letter-probability matrix: alength= 4 w= %d nsites= %d' % (ic_end-ic_start+1, nsites)
+
+        for i in range(ic_start, ic_end+1):
+            print >> meme_out, '%.4f %.4f %.4f %.4f' % tuple(filter_pwm[i])
+        print >> meme_out, ''
 
 
 def meme_intro(meme_file, seqs):
