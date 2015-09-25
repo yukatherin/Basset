@@ -31,7 +31,6 @@ torch.manualSeed(1)
 local convnet_params = torch.load(opt.model_file)
 local convnet = ConvNet:__init()
 convnet:load(convnet_params)
-convnet:decuda()
 
 -- get convolution filter stats
 local conv_filters = convnet.conv_filters[1]
