@@ -100,6 +100,7 @@ elseif opt.seed ~= '' then
     local convnet_params = torch.load(opt.seed)
     convnet:load(convnet_params)
     convnet:adjust_final(num_targets)
+    convnet:adjust_optim(job)
 else
     build_success = convnet:build(job, init_depth, seq_len, num_targets)
 
