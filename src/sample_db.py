@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from optparse import OptionParser
+import gzip
 import random
 
 ################################################################################
@@ -31,7 +32,10 @@ def main():
 
     # open input files
     bed_in = open(db_bed)
-    table_in = open(db_act_file)
+    if db_act_file[-3:] == '.gz':
+        table_in = gzip.open(db_act_file)
+    else:
+        table_in = open(db_act_file)
 
     # save table header
     table_header = table_in.readline()
