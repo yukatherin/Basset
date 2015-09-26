@@ -48,7 +48,7 @@ def main():
             else:
                 # read db target names
                 db_act_in = open(options.db_act_file)
-                db_targets = db_act_in.readline().split('\t')[1:]
+                db_targets = db_act_in.readline().strip().split('\t')
                 db_act_in.close()
 
     # read in targets and assign them indexes into the db
