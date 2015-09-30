@@ -42,15 +42,19 @@ The full requirement list is [here](docs/requirements.md).
 ---------------------------------------------------------------------------------------------------
 ### Documentation
 
+Basset is under active development, so don't hesitate to ask for clarifications or additional features, documentation, or tutorials.
+
 Each first order item should be a page.
 Then each second order item should be a section on the page.
 Ideally, the text here links to that page section.
 
-- File specifications
+- [File specifications](docs/file_specs.md)
   - [BED](docs/file_specs.md#bed)
-  - Table
-- Preprocess
-  - preprocess_peaks.py
+  - [Table](docs/file_specs.md#table)
+  - [HDF5](docs/file_specs.md#hdf5)
+- [Preprocess](docs/preprocess.md)
+  - [preprocess_peaks.py](docs/preprocess.md#preprocess_peaks.py)
+  - [seq_hdf5.py](docs/preprocess.md#seq_hdf.py)
 - Train
 - Predict
 - Visualization

@@ -51,20 +51,18 @@ Construct an HDF5 file, dividng the data into training, validation, and test sub
 
 
 --------------------------------------------------------------------------------
-<a name="sample_db.py"/>
-#### sample_db.py
+<a name="basset_sample.py"/>
+#### basset_sample.py
 
 Sample sequences from an existing database.
 
-- Input
-  - sample_num[int]
-  - [BED](../docs/file_specs.md#bed)
-  - [Table](../docs/file_specs.md#table)
-- Output
-  - [BED](../docs/file_specs.md#bed)
-  - [Table](../docs/file_specs.md#table)
-- Options
-
-| Option | Variable | Help |
+| Argument | Type | Description |
 | --- | --- | --- |
-| -o | out_prefix | Output file prefix [Default: peak_size] |
+| db_bed | [BED](../docs/file_specs.md#bed) | Existing database BED. |
+| db_act_file | [Table](../docs/file_specs.md#table) | Existing database activity table. |
+| sample_seqs | int | Number of sequences to sample. |
+| output_prefix | str | Filename prefix for output BED and activity table files. |
+
+| Option | Variable | Description |
+| --- | --- | --- |
+| -s | seed | Random number generator seed [Default: 1] |
