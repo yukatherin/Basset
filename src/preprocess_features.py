@@ -22,14 +22,14 @@ import numpy as np
 def main():
     usage = 'usage: %prog [options] <target_beds_file>'
     parser = OptionParser(usage)
-    parser.add_option('-a', dest='db_act_file', help='Existing database of activity scores')
-    parser.add_option('-b', dest='db_bed', help='Existing database of BED peaks.')
+    parser.add_option('-a', dest='db_act_file', help='Existing database activity table.')
+    parser.add_option('-b', dest='db_bed', help='Existing database BED file.')
     parser.add_option('-c', dest='chrom_lengths_file', help='Table of chromosome lengths')
-    parser.add_option('-m', dest='merge_overlap', default=200, type='int', help='Overlap length above which to merge features [Default: %default]')
+    parser.add_option('-m', dest='merge_overlap', default=200, type='int', help='Overlap length (after extension to feature_size) above which to merge features [Default: %default]')
     parser.add_option('-n', dest='no_db_activity', default=False, action='store_true', help='Do not pass along the activities of the database sequences [Default: %default]')
-    parser.add_option('-o', dest='out_prefix', default='peaks', help='Output file prefix [Default: %default]')
-    parser.add_option('-s', dest='peak_size', default=600, type='int', help='Peak extension size [Default: %default]')
-    parser.add_option('-y', dest='ignore_y', default=False, action='store_true', help='Ignore Y chromsosome peaks [Default: %default]')
+    parser.add_option('-o', dest='out_prefix', default='features', help='Output file prefix [Default: %default]')
+    parser.add_option('-s', dest='feature_size', default=600, type='int', help='Extend features to this size [Default: %default]')
+    parser.add_option('-y', dest='ignore_y', default=False, action='store_true', help='Ignore Y chromsosome features [Default: %default]')
     (options,args) = parser.parse_args()
 
     if len(args) != 1:
@@ -167,7 +167,7 @@ def main():
             peak_end = int(a[2])
             peak_act = activity_set(a[6])
             peak = Peak(peak_start, peak_end, peak_act)
-            peak.extend(options.peak_size, chrom_lengths.get(chrom,None))
+            peak.extend(options.feature_size, chrom_lengths.get(chrom,None))
 
             if len(open_peaks) == 0:
                 # initialize open peak
@@ -180,7 +180,7 @@ def main():
                 # if beyond existing open peak
                 if open_end - options.merge_overlap <= peak.start:
                     # close open peak
-                    mpeaks = merge_peaks(open_peaks, options.peak_size, options.merge_overlap, chrom_lengths.get(chrom,None))
+                    mpeaks = merge_peaks(open_peaks, options.feature_size, options.merge_overlap, chrom_lengths.get(chrom,None))
 
                     # print to file
                     for mpeak in mpeaks:
@@ -197,7 +197,7 @@ def main():
 
         if len(open_peaks) > 0:
             # close open peak
-            mpeaks = merge_peaks(open_peaks, options.peak_size, options.merge_overlap, chrom_lengths.get(chrom,None))
+            mpeaks = merge_peaks(open_peaks, options.feature_size, options.merge_overlap, chrom_lengths.get(chrom,None))
 
             # print to file
             for mpeak in mpeaks:

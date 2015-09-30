@@ -3,8 +3,8 @@
 --------------------------------------------------------------------------------
 ## Preprocess
 
-<a name="preprocess_peaks.py"/>
-#### preprocess_peaks.py
+<a name="preprocess_features.py"/>
+#### preprocess_features.py
 
 Merge a set of feature BED files for training.
 
@@ -15,15 +15,20 @@ Merge a set of feature BED files for training.
   - [Table](../docs/file_specs.md#table)
 - Options
 
+| Argument | Type | Description |
+| --- | --- | --- |
+| target_beds_file | table listing labels and [BED]((../docs/file_specs.md#bed)) | One line per sample- label then BED path |
+
 | Option | Variable | Help |
 | --- | --- | --- |
-| -a | db_acc_file | Existing database of accessibility scores |
-| -b | db_bed | Existing database of BED peaks. |
-| -c |chrom_lengths_file | Table of chromosome lengths |
-| -m | merge_overlap | Overlap required (after extension to peak_size) to merge features. Can be negative. [Default: 0] |
-| -o | out_prefix | Output file prefix [Default: peak_size] |
-| -s | peak_size | Peak extension size [Default: 600] |
-| -y | ignore_y | Ignore Y chromsosome peaks [Default: False] |
+| -a | db_act_file | Existing database [activity table](../docs/file_specs.md#table) |
+| -b | db_bed | Existing database [BED](../docs/file_specs.md#bed) |
+| -c | chrom_lengths_file | Table of chromosome lengths |
+| -m | merge_overlap | Overlap length (after extension to feature_size) above which to merge features [Default: 200] |
+| -n | no_db_activity | Do not pass along the activities of the database sequences [Default: False] |
+| -o | out_prefix | Output file prefix [Default: features] |
+| -s | feature_size | Extend features to this size [Default: 600] |
+| -y | ignore_y | Ignore Y chromsosome features [Default: False] |
 
 
 --------------------------------------------------------------------------------
@@ -32,13 +37,11 @@ Merge a set of feature BED files for training.
 
 Construct an HDF5 file, dividng the data into training, validation, and test subsets.
 
-- Input
-  - FASTA
-  - [Table](../docs/file_specs.md#table)
-  - Output HDF5
-- Output
-  - [HDF5](../docs/file_specs.md#hdf5)
-- Options
+| Argument | Type | Description |
+| --- | --- | --- |
+| fasta_file | FASTA | FASTA file of sequences. |
+| targets_file | [Table](../docs/file_specs.md#table) | Targets activity table. |
+| out_file | [HDF5](../docs/file_specs.md#hdf5) | Output HDF5 file. |
 
 | Option | Variable | Help |
 | --- | --- | --- |

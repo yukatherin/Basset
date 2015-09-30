@@ -53,11 +53,20 @@ Ideally, the text here links to that page section.
   - [Table](docs/file_specs.md#table)
   - [HDF5](docs/file_specs.md#hdf5)
 - [Preprocess](docs/preprocess.md)
-  - [preprocess_peaks.py](docs/preprocess.md#preprocess_peaks.py)
+  - [preprocess_features.py](docs/preprocess.md#preprocess_features.py)
   - [seq_hdf5.py](docs/preprocess.md#seq_hdf.py)
+  - [basset_sample.py](docs/preprocess.md#basset_sample.py)
 - Train
+  - [basset_train.lua]
 - Predict
+  - [basset_test.lua]
+  - [basset_predict.lua]
 - Visualization
+  - [basset_motifs.py]
+  - [basset_motifs_infl.py]
+  - [basset_sat.py]
+  - [basset_sat_vcf.py]
+  - [basset_sad.py]
 
 ---------------------------------------------------------------------------------------------------
 ### Tutorials
@@ -66,5 +75,10 @@ Ideally, the text here links to that page section.
   - [Prepare new dataset(s) by adding to a compendium.](tutorials/new_data_many.ipynb)
   - [Prepare new dataset(s) in isolation.](tutorials/new_data_iso.ipynb)
 - Train
-- Predict
+  - [Train a model.](tutorials/train.ipynb)
+- Test
+  - [Test a trained model.](tutorials/test.ipynb)
 - Visualization
+  - [Study the motifs learned by the model.](tutorials/motifs.ipynb)
+  - [Execute an in silico saturated mutagenesis](tutorials/sat_mut.ipynb)
+  - [Compute SNP Accessibility Difference profiles.](tutorials/sad.ipynb)
