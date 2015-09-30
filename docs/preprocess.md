@@ -6,18 +6,11 @@
 <a name="preprocess_features.py"/>
 #### preprocess_features.py
 
-Merge a set of feature BED files for training.
-
-- Input
-  - [target_beds_file](../docs/file_specs.md#bed)
-- Output
-  - [BED](../docs/file_specs.md#bed)
-  - [Table](../docs/file_specs.md#table)
-- Options
+Merge a set of feature BED files for training into a single [BED](../docs/file_specs.md#bed) and [activity table](../docs/file_specs.md#table).
 
 | Argument | Type | Description |
 | --- | --- | --- |
-| target_beds_file | table listing labels and [BED]((../docs/file_specs.md#bed)) | One line per sample- label then BED path |
+| target_beds_file | table listing labels and [BED](../docs/file_specs.md#bed) | One line per sample- label then BED path |
 
 | Option | Variable | Help |
 | --- | --- | --- |
