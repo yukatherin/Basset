@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 from optparse import OptionParser
+import os
+import subprocess
 
 ################################################################################
-# name
+# install.py
 #
-#
+# Download and arrange pre-trained models and data.
 ################################################################################
 
 
@@ -17,11 +19,25 @@ def main():
     #parser.add_option()
     (options,args) = parser.parse_args()
 
-    ############################################################
-    # prepare data
-    ############################################################
     os.chdir('data')
 
+    ############################################################
+    # download pre-trained model
+    ############################################################
+    os.chdir('models')
+
+    cmd = 'wget https://www.dropbox.com/s/rguytuztemctkf8/pretrained_model.th.gz?dl=0'
+    subprocess.call(cmd, shell=True)
+
+    cmd = 'gunzip pretrained_model.th.gz'
+    subprocess.call(cmd, shell=True)
+
+    os.chdir('..')
+
+
+    ############################################################
+    # download and prepare public data
+    ############################################################
     # download and arrange available data
     cmd = './get_dnase.sh'
     subprocess.call(cmd, shell=True)
@@ -37,8 +53,6 @@ def main():
     # make an HDF5 file
     cmd = 'seq_hdf5.py -c -r -t 71886 -v 70000 encode_roadmap.fa encode_roadmap_act.txt encode_roadmap.h5'
     subprocess.call(cmd, shell=True)
-
-    os.chdir('..')
 
 
 ################################################################################
