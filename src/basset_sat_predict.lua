@@ -85,6 +85,8 @@ local seq_mod_preds = torch.DoubleTensor(num_seqs, 4, delta_len, num_targets)
 local seq_mods = torch.Tensor(num_mods, 4, 1, seq_len)
 
 for si=1,num_seqs do
+    print(string.format("Predicting sequence %d variants", si))
+
     local seq_1hot = test_seqs:partial({si,si},{1,4},{1,1},{1,seq_len})
     seq_1hot = seq_1hot:reshape(4, 1, seq_len)
 
