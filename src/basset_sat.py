@@ -27,7 +27,7 @@ def main():
     parser.add_option('-l', dest='min_limit', default=0.1, type='float', help='Minimum heatmap limit [Default: %default]')
     parser.add_option('-n', dest='center_nt', default=200, type='int', help='Center nucleotides to mutate and plot in the heatmap [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='heat', help='Output directory [Default: %default]')
-    parser.add_option('-s', dest='sample', default=100, type='int', help='Sample sequences from the input HDF5 test set [Default:%default]')
+    parser.add_option('-s', dest='sample', default=None, type='int', help='Sample sequences from the input HDF5 test set [Default:%default]')
     parser.add_option('-t', dest='torch_out_hdf5', default=None, help='Pre-computed Torch model output as HDF5 [Default: %default]')
     (options,args) = parser.parse_args()
 
@@ -78,6 +78,9 @@ def main():
             seq_headers = seq_headers[sample_i]
             if targets is not None:
                 targets = targets[sample_i]
+
+        # reshape sequences for torch
+        seqs_1hot = seqs_1hot.reshape((seqs_1hot.shape[0],4,1,seqs_1hot.shape[1]/4))
 
         # write as test data to a HDF5 file
         h5f = h5py.File(model_input_hdf5, 'w')
