@@ -21,41 +21,23 @@ To download and install the remaining dependencies, run
 ```
 
 Basset relies on the environmental variable BASSETDIR to orient itself. In your startup script (.e.g .bashrc), write
+```
     export BASSETDIR=the/dir/where/basset/is/installed
+```
 
 To make the code available for use in any directory, also write
+```
     export PATH=$BASSETDIR/src:$PATH
     export LUAPATH=$BASSETDIR/src:$LUAPATH
     export PYTHONPATH=$BASSETDIR/src:$PYTHONPATH
+```
 
 To download and install additional useful data, like my best pre-trained model and public datasets, run
+```
     ./install_data.py
+```
 
-Finally, if you're downloading this tool,
-
-Full list of requirements:
-- [Torch7](http://torch.ch/docs/getting-started.html)
-  - nn
-  - optim
-  - cutorch
-  - cunn
-  - lfs
-  - [hdf5](https://github.com/deepmind/torch-hdf5)
-  - [dpnn](https://github.com/nicholas-leonard/dpnn)
-  - [inn](https://github.com/szagoruyko/imagine-nn)
-- Python
-  - [numpy](http://www.numpy.org/)
-  - [matplotlib](http://matplotlib.org/)
-  - [seaborn](http://stanford.edu/~mwaskom/software/seaborn/index.html)
-  - [pandas](http://pandas.pydata.org/)
-  - [h5py](http://www.h5py.org/)
-  - [sklearn](http://scikit-learn.org/stable/)
-  - [pysam](https://code.google.com/p/pysam/)
-- Bioinformatics
-  - [bedtools](http://bedtools.readthedocs.org/en/latest/)
-  - [Samtools](http://www.htslib.org/)
-  - [WebLogo](http://weblogo.threeplusone.com/) (optional)
-  - [Tomtom, from MEME Suite](http://meme-suite.org/doc/download.html) (optional)
+The full requirement list is [here](docs/requirements.md).
 
 ---------------------------------------------------------------------------------------------------
 ### Documentation
@@ -76,10 +58,9 @@ Ideally, the text here links to that page section.
 ---------------------------------------------------------------------------------------------------
 ### Tutorials
 
-Each second order item should be a page.
-
 - Preprocess
-  - preprocess_peaks.py
+  - [Prepare new dataset(s) by adding to a compendium.](tutorials/new_data_many.ipynb)
+  - [Prepare new dataset(s) in isolation.](tutorials/new_data_iso.ipynb)
 - Train
 - Predict
 - Visualization
