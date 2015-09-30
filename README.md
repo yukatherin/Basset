@@ -1,5 +1,5 @@
 # Basset
-#### Convolutional artificial neural network analysis for DNA sequences.
+#### Convolutional neural network analysis for predicting DNA sequence activity.
 
 Basset provides researchers with tools to:
 
