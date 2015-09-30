@@ -17,6 +17,7 @@ cmd:text()
 cmd:text('Options:')
 cmd:option('-cuda', false, 'Run on GPGPU')
 cmd:option('-job', '', 'Table of job hyper-parameters')
+cmd:option('-max_epochs', 1000, 'Maximum training epochs to perform')
 cmd:option('-restart', '', 'Restart an interrupted training')
 cmd:option('-result', '', 'Write the loss to this file (useful for Bayes Opt)')
 cmd:option('-save', 'dnacnn', 'Prefix for saved models')
@@ -129,7 +130,7 @@ local epoch_best = 1
 local valid_best = math.huge
 local batcher = Batcher:__init(train_seqs, train_targets, batch_size)
 
-while epoch - epoch_best <= opt.stagnant_t do
+while epoch <= opt.max_epochs and epoch - epoch_best <= opt.stagnant_t do
     io.write(string.format("Epoch #%3d   ", epoch))
     local start_time = sys.clock()
 
@@ -141,8 +142,15 @@ while epoch - epoch_best <= opt.stagnant_t do
     convnet.model:evaluate()
 
     -- measure accuracy on a test set
-    local valid_loss, valid_aucs = convnet:test(valid_seqs, valid_targets)
-    local valid_auc_avg = torch.mean(valid_aucs)
+    local valid_loss, valid_acc = convnet:test(valid_seqs, valid_targets)
+
+    local valid_acc_avg = torch.mean(valid_acc)
+    local acc_str
+    if convnet.mode == "binary" then
+        acc_str = string.format("AUC = %.4f", valid_acc_avg)
+    else
+        acc_str = string.format("R2 = %.4f", valid_acc_avg)
+    end
 
     -- print w/ time
     local epoch_time = sys.clock()-start_time
@@ -151,7 +159,8 @@ while epoch - epoch_best <= opt.stagnant_t do
     else
         time_str = string.format('%3dm', epoch_time/60)
     end
-    io.write(string.format("valid loss = %7.3f, AUC = %.4f, time = %s", valid_loss, valid_auc_avg, time_str))
+
+    io.write(string.format("valid loss = %7.3f, %s, time = %s", valid_loss, acc_str, time_str))
 
     -- save checkpoint
     convnet:sanitize()

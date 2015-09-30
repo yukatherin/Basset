@@ -1,17 +1,17 @@
 require 'dpnn'
 require 'nn'
-require 'inn'
 require 'optim'
 
 if cuda then
     require 'cunn'
     require 'cutorch'
+    require 'inn'
 end
 
-metrics = require 'metrics'
-
+require 'accuracy'
 require 'batcher'
 require 'batcherT'
+
 
 ConvNet = {}
 
@@ -393,9 +393,6 @@ function ConvNet:setStructureParams(job)
     ---------------------------------------------
     -- training
     ---------------------------------------------
-    -- max passes through the dataset
-    self.num_epochs = job.num_epochs or 1000
-
     -- number of examples per weight update
     self.batch_size = job.batch_size or 200
 
@@ -669,10 +666,10 @@ function ConvNet:test(Xf, Yf, batch_size)
             local Yi = Yf:partial({1,batcher.num_seqs},{yi,yi}):squeeze()
 
             -- compute ROC points
-            roc_points[yi] = metrics.ROC.points(preds[{{},yi}], Yi)
+            roc_points[yi] = ROC.points(preds[{{},yi}], Yi)
 
             -- compute AUCs
-            AUCs[yi] = metrics.ROC.area(roc_points[yi])
+            AUCs[yi] = ROC.area(roc_points[yi])
 
             collectgarbage()
         end
@@ -680,9 +677,7 @@ function ConvNet:test(Xf, Yf, batch_size)
         return avg_loss, AUCs, roc_points
     else
         -- compute R2
-        local Y_var = (Y - Y:mean(1):expand(#Y)):pow(2):mean(1)
-        local pred_var = (preds - Y):pow(2):mean(1)
-        local R2s = torch.Tensor(#Y_var):fill(1) - torch.cdiv(pred_var, Y_var)
+        local R2s = variance_explained(Y, preds)
 
         return avg_loss, R2s
     end
