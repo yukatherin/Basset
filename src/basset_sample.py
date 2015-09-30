@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from optparse import OptionParser
+import gzip
 import random
 import sys
 
@@ -73,7 +74,10 @@ def main():
         reservoir_headers.add(header)
 
     act_out = open('%s_act.txt' % out_pre, 'w')
-    act_in = open(act_file)
+    if act_file[-3:] == '.gz':
+        act_in = gzip.open(act_file)
+    else:
+        act_in = open(act_file)
 
     # print header
     print >> act_out, act_in.readline(),
