@@ -21,8 +21,6 @@ import dna_io
 # of the given model using the given sequences.
 ################################################################################
 
-# weblogo_opts = '-X NO -Y NO --errorbars NO --fineprint "" -c classic'
-
 weblogo_opts = '-X NO -Y NO --errorbars NO --fineprint ""'
 weblogo_opts += ' -C "#CB2026" A A'
 weblogo_opts += ' -C "#34459C" C C'
@@ -37,7 +35,7 @@ def main():
     parser = OptionParser(usage)
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5.')
     parser.add_option('-o', dest='out_dir', default='.')
-    parser.add_option('-m', dest='meme_db', default='~/software/meme_4.10.1/motif_databases/CIS-BP/Homo_sapiens.meme')
+    parser.add_option('-m', dest='meme_db', default='%s/data/motifs/Homo_sapiens.meme' % os.environ['BASSETDIR'])
     parser.add_option('-s', dest='sample', default=None, type='int', help='Sample sequences from the test set [Default:%default]')
     parser.add_option('-t', dest='trim_filters', default=False, action='store_true', help='Trim uninformative positions off the filter ends [Default: %default]')
     (options,args) = parser.parse_args()
