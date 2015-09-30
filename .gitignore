@@ -1,10 +1,15 @@
 *~
 *.pyc
 data/encode*
+data/genomes/hg19.fa*
 data/roadmap*
 data/sample_beds.txt
+data/subsets
+data/models/*.th
+src/.ipynb_checkpoints
 tutorials/*.bed
 tutorials/*.fa
 tutorials/*.h5
 tutorials/*.txt
+tutorials/motifs_out
 tutorials/.ipynb_checkpoints
