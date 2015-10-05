@@ -8,11 +8,11 @@
 
 Merge a set of feature BED files for training into a single [BED](../docs/file_specs.md#bed) and [activity table](../docs/file_specs.md#table).
 
-| Argument | Type | Description |
+| Arguments | Type | Description |
 | --- | --- | --- |
 | target_beds_file | table listing labels and [BED](../docs/file_specs.md#bed) | One line per sample- label then BED path |
 
-| Option | Variable | Help |
+| Options | Variable | Description |
 | --- | --- | --- |
 | -a | db_act_file | Existing database [activity table](../docs/file_specs.md#table) |
 | -b | db_bed | Existing database [BED](../docs/file_specs.md#bed) |
@@ -30,13 +30,13 @@ Merge a set of feature BED files for training into a single [BED](../docs/file_s
 
 Construct an HDF5 file, dividng the data into training, validation, and test subsets.
 
-| Argument | Type | Description |
+| Arguments | Type | Description |
 | --- | --- | --- |
 | fasta_file | FASTA | FASTA file of sequences. |
 | targets_file | [Table](../docs/file_specs.md#table) | Targets activity table. |
 | out_file | [HDF5](../docs/file_specs.md#hdf5) | Output HDF5 file. |
 
-| Option | Variable | Help |
+| Options | Variable | Description |
 | --- | --- | --- |
 | -b | batch_size | Align sizes with batch size |
 | -c | counts | Validation and training percentages are given as raw counts [Default: False] |
@@ -52,13 +52,13 @@ Construct an HDF5 file, dividng the data into training, validation, and test sub
 
 Sample sequences from an existing database.
 
-| Argument | Type | Description |
+| Arguments | Type | Description |
 | --- | --- | --- |
 | db_bed | [BED](../docs/file_specs.md#bed) | Existing database BED. |
 | db_act_file | [Table](../docs/file_specs.md#table) | Existing database activity table. |
 | sample_seqs | int | Number of sequences to sample. |
 | output_prefix | str | Filename prefix for output BED and activity table files. |
 
-| Option | Variable | Description |
+| Options | Variable | Description |
 | --- | --- | --- |
 | -s | seed | Random number generator seed [Default: 1] |

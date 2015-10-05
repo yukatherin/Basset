@@ -31,7 +31,7 @@ def main():
     if not options.restart or not os.path.isfile('pretrained_model.th'):
         print >> sys.stderr, 'Downloading pre-trained model.'
 
-        cmd = 'wget https://www.dropbox.com/s/rguytuztemctkf8/pretrained_model.th.gz?dl=0'
+        cmd = 'wget https://www.dropbox.com/s/rguytuztemctkf8/pretrained_model.th.gz'
         subprocess.call(cmd, shell=True)
 
         cmd = 'gunzip pretrained_model.th.gz'
@@ -76,6 +76,18 @@ def main():
     # download and prepare public data
     ############################################################
     if not options.restart or not os.path.isfile('encode_roadmap.h5'):
+        cmd = 'wget https://www.dropbox.com/s/h1cqokbr8vjj5wc/encode_roadmap.bed.gz'
+        subprocess.call(cmd, shell=True)
+        cmd = 'gunzip encode_roadmap.bed.gz'
+        subprocess.call(cmd, shell=True)
+
+        cmd = 'wget https://www.dropbox.com/s/8g3kc0ai9ir5d15/encode_roadmap_act.txt.gz'
+        subprocess.call(cmd, shell=True)
+        cmd = 'gunzip encode_roadmap_act.txt.gz'
+        subprocess.call(cmd, shell=True)
+
+    '''
+    if not options.restart or not os.path.isfile('encode_roadmap.h5'):
         # download and arrange available data
         cmd = './get_dnase.sh'
         subprocess.call(cmd, shell=True)
@@ -91,6 +103,7 @@ def main():
         # make an HDF5 file
         cmd = 'seq_hdf5.py -c -r -t 71886 -v 70000 encode_roadmap.fa encode_roadmap_act.txt encode_roadmap.h5'
         subprocess.call(cmd, shell=True)
+    '''
 
 
 ################################################################################

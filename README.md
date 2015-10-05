@@ -72,6 +72,7 @@ Ideally, the text here links to that page section.
 ### Tutorials
 
 - Preprocess
+  - [Prepare the ENCODE and Epigenomics Roadmap compendium from scratch.](tutorials/prepare_compendium.ipynb)
   - [Prepare new dataset(s) by adding to a compendium.](tutorials/new_data_many.ipynb)
   - [Prepare new dataset(s) in isolation.](tutorials/new_data_iso.ipynb)
 - Train
