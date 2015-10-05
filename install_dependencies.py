@@ -20,7 +20,7 @@ def main():
     (options,args) = parser.parse_args()
 
     # confirm luarocks
-    luarocks_which = subprocess.check_output('which luarocks')
+    luarocks_which = subprocess.check_output('which luarocks', shell=True)
     if luarocks_which == '':
         print >> sys.stderr, 'Please install Torch7 first.'
         exit(1)

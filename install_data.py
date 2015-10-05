@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from optparse import OptionParser
+import glob
 import os
 import subprocess
 import sys
@@ -28,7 +29,7 @@ def main():
     os.chdir('models')
 
     if not options.restart or not os.path.isfile('pretrained_model.th'):
-        print >> sys.stderr, 'Downloading pre-trained model.
+        print >> sys.stderr, 'Downloading pre-trained model.'
 
         cmd = 'wget https://www.dropbox.com/s/rguytuztemctkf8/pretrained_model.th.gz?dl=0'
         subprocess.call(cmd, shell=True)
@@ -74,7 +75,7 @@ def main():
     ############################################################
     # download and prepare public data
     ############################################################
-    if not options.restart or not os.path.isfile('encode_roadmap.h5')
+    if not options.restart or not os.path.isfile('encode_roadmap.h5'):
         # download and arrange available data
         cmd = './get_dnase.sh'
         subprocess.call(cmd, shell=True)
