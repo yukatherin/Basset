@@ -36,3 +36,10 @@
   - test_in
   - test_out
   - test_headers
+
+--------------------------------------------------------------------------------
+<a name="model"/>
+###### Model
+
+- [serialized Torch7 model](https://github.com/torch/torch7/blob/master/doc/serialization.md)
+- [basset_train.lua](learning.md#train) saves a check point after every epoch and saves the best validation loss.

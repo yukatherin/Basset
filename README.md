@@ -52,6 +52,7 @@ Ideally, the text here links to that page section.
   - [BED](docs/file_specs.md#bed)
   - [Table](docs/file_specs.md#table)
   - [HDF5](docs/file_specs.md#hdf5)
+  - [Model](docs/file_specs.md#model)
 - [Preprocess](docs/preprocess.md)
   - [preprocess_features.py](docs/preprocess.md#preprocess_features.py)
   - [seq_hdf5.py](docs/preprocess.md#seq_hdf.py)

@@ -33,7 +33,7 @@ Report model performance on the given test data, producing files with AUC and po
 
 | Argument | Type | Description |
 | --- | --- | --- |
-| model_file | Model file | Saved model to use |
+| model_file | [Model](../docs/file_specs.md#model) | Saved model to use |
 | data_file | [HDF5](../docs/file_specs.md#hdf5) | Input training and validation data |
 | out_dir | | Output directory |
 
@@ -49,7 +49,7 @@ Predict activity for a new set of sequences.
 
 | Arguments | Type | Description |
 | --- | --- | --- |
-| model_file | Model file | Saved model to use |
+| model_file | [Model](../docs/file_specs.md#model) | Saved model to use |
 | data_file | [HDF5](../docs/file_specs.md#hdf5) | Input training and validation data |
 | out_file | | Output file |
 
