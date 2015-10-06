@@ -1,10 +1,10 @@
 # Basset
-#### Convolutional neural network analysis for predicting DNA sequence activity.
+#### Deep convolutional neural networks for predicting DNA sequence activity.
 
 Basset provides researchers with tools to:
 
-1. Apply deep convolutional neural networks to learn accurate models to predict DNA sequence activity such as accessibility (via DNaseI-seq or ATAC-seq) or binding (via ChIP-seq).
-2. Extract the information learned.
+1. Train deep convolutional neural networks to learn highly accurate models of DNA sequence activity such as accessibility (via DNaseI-seq or ATAC-seq), protein binding (via ChIP-seq), and chromatin state.
+2. Interpret the principles learned by the model.
 
 ---------------------------------------------------------------------------------------------------
 ### Installation
@@ -20,7 +20,7 @@ To download and install the remaining dependencies, run
     ./install_dependencies.py
 ```
 
-Basset relies on the environmental variable BASSETDIR to orient itself. In your startup script (.e.g .bashrc), write
+Basset relies on the environmental variable BASSETDIR to orient itself. In your startup script (e.g. .bashrc), write
 ```
     export BASSETDIR=the/dir/where/basset/is/installed
 ```
