@@ -1,5 +1,5 @@
 # Basset
-#### Deep convolutional neural networks for predicting DNA sequence activity.
+#### Deep convolutional neural networks for DNA sequence analysis.
 
 Basset provides researchers with tools to:
 
@@ -43,10 +43,6 @@ You can find the full requirement list [here](docs/requirements.md).
 ### Documentation
 
 Basset is under active development, so don't hesitate to ask for clarifications or additional features, documentation, or tutorials.
-
-Each first order item should be a page.
-Then each second order item should be a section on the page.
-Ideally, the text here links to that page section.
 
 - [File specifications](docs/file_specs.md)
   - [BED](docs/file_specs.md#bed)
