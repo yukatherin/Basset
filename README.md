@@ -56,7 +56,7 @@ Ideally, the text here links to that page section.
   - [preprocess_features.py](docs/preprocess.md#preprocess_features.py)
   - [seq_hdf5.py](docs/preprocess.md#seq_hdf.py)
   - [basset_sample.py](docs/preprocess.md#basset_sample.py)
-- Learning
+- [Learning](docs/learning.md)
   - [basset_train.lua](docs/learning.md#train)
   - [basset_test.lua](docs/learning.md#test)
   - [basset_predict.lua](docs/learning.md#predict)
@@ -69,6 +69,8 @@ Ideally, the text here links to that page section.
 
 ---------------------------------------------------------------------------------------------------
 ### Tutorials
+
+These are a work in progress, so forgive incompleteness for the moment. If there's a task that you're interested in that I haven't included, feel free to post it as an Issue at the top.
 
 - Preprocess
   - [Prepare the ENCODE and Epigenomics Roadmap compendium from scratch.](tutorials/prepare_compendium.ipynb)
