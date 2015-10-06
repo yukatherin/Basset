@@ -26,14 +26,14 @@ import seaborn as sns
 def main():
     usage = 'usage: %prog [options] <model_file> <test_hdf5_file>'
     parser = OptionParser(usage)
-    parser.add_option('-b', dest='batch_size', default=1000, type='int', help='Torch batch size [Default: %default]')
+    parser.add_option('-b', dest='batch_size', default=1000, type='int', help='Batch size (affects memory usage) [Default: %default]')
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5.')
     parser.add_option('-i', dest='informative_only', default=False, action='store_true', help='Plot informative filters only [Default: %default]')
     parser.add_option('-m', dest='motifs_file')
     parser.add_option('-n', dest='norm_targets', default=False, action='store_true', help='Use the norm of the target influences as the primary influence measure [Default: %default]')
+    parser.add_option('-o', dest='out_dir', default='.')
     parser.add_option('--subset', dest='subset_file', default=None, help='Subset targets to the ones in this file')
     parser.add_option('-s', dest='sample', default=None, type='int', help='Sample sequences from the test set [Default:%default]')
-    parser.add_option('-o', dest='out_dir', default='.')
     parser.add_option('-t', dest='targets_file', default=None, help='File specifying target indexes and labels in table format')
     parser.add_option('--width', dest='heat_width', default=10, type='float')
     parser.add_option('--height', dest='heat_height', default=20, type='float')

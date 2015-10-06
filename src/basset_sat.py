@@ -12,8 +12,10 @@ import dna_io
 from seq_logo import seq_logo
 
 ################################################################################
-# basset_heat.py
+# basset_sat.py
 #
+# Perform an in silico saturated mutagenesis of the given test sequences using
+# the given model.
 ################################################################################
 
 ################################################################################
@@ -23,12 +25,12 @@ def main():
     usage = 'usage: %prog [options] <model_file> <input_file>'
     parser = OptionParser(usage)
     parser.add_option('-a', dest='input_activity_file', help='Optional activity table corresponding to an input FASTA file')
-    parser.add_option('-c', dest='cells', default='83', help='Comma-separated list of cell indexes to plot (or -1 for all) [Default: %default]')
-    parser.add_option('-l', dest='min_limit', default=0.1, type='float', help='Minimum heatmap limit [Default: %default]')
-    parser.add_option('-n', dest='center_nt', default=200, type='int', help='Center nucleotides to mutate and plot in the heatmap [Default: %default]')
+    parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5 [Default: %default]')
+    parser.add_option('-m', dest='min_limit', default=0.1, type='float', help='Minimum heatmap limit [Default: %default]')
+    parser.add_option('-n', dest='center_nt', default=200, type='int', help='Center nt to mutate and plot in the heat map [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='heat', help='Output directory [Default: %default]')
-    parser.add_option('-s', dest='sample', default=None, type='int', help='Sample sequences from the input HDF5 test set [Default:%default]')
-    parser.add_option('-t', dest='torch_out_hdf5', default=None, help='Pre-computed Torch model output as HDF5 [Default: %default]')
+    parser.add_option('-s', dest='sample', default=None, type='int', help='Sample sequences from the test set [Default:%default]')
+    parser.add_option('-t', dest='targets', default='0', help='Comma-separated list of target indexes to plot (or -1 for all) [Default: %default]')
     (options,args) = parser.parse_args()
 
     if len(args) != 2:
@@ -129,9 +131,9 @@ def main():
     #################################################################
     # Torch predict modifications
     #################################################################
-    if options.torch_out_hdf5 is None:
-        options.torch_out_hdf5 = '%s/model_out.h5' % options.out_dir
-        torch_cmd = 'basset_sat_predict.lua -center_nt %d %s %s %s' % (options.center_nt, model_file, model_input_hdf5, options.torch_out_hdf5)
+    if options.model_hdf5_file is None:
+        options.model_hdf5_file = '%s/model_out.h5' % options.out_dir
+        torch_cmd = 'basset_sat_predict.lua -center_nt %d %s %s %s' % (options.center_nt, model_file, model_input_hdf5, options.model_hdf5_file)
         print torch_cmd
         subprocess.call(torch_cmd, shell=True)
 
@@ -139,7 +141,7 @@ def main():
     #################################################################
     # load modification predictions
     #################################################################
-    hdf5_in = h5py.File(options.torch_out_hdf5, 'r')
+    hdf5_in = h5py.File(options.model_hdf5_file, 'r')
     seq_mod_preds = np.array(hdf5_in['seq_mod_preds'])
     hdf5_in.close()
 
@@ -153,10 +155,10 @@ def main():
             seqs[i] = seqs[i][delta_start:delta_start+delta_len]
 
     # decide which cells to plot
-    if options.cells == '-1':
+    if options.targets == '-1':
         plot_cells = xrange(scores.shape[1])
     else:
-        plot_cells = [int(ci) for ci in options.cells.split(',')]
+        plot_cells = [int(ci) for ci in options.targets.split(',')]
 
 
     #################################################################
