@@ -37,7 +37,7 @@ To download and install additional useful data, like my best pre-trained model a
     ./install_data.py
 ```
 
-The full requirement list is [here](docs/requirements.md).
+You can find the full requirement list [here](docs/requirements.md).
 
 ---------------------------------------------------------------------------------------------------
 ### Documentation
@@ -61,12 +61,12 @@ Ideally, the text here links to that page section.
   - [basset_train.lua](docs/learning.md#train)
   - [basset_test.lua](docs/learning.md#test)
   - [basset_predict.lua](docs/learning.md#predict)
-- Visualization
-  - [basset_motifs.py]
-  - [basset_motifs_infl.py]
-  - [basset_sat.py]
-  - [basset_sat_vcf.py]
-  - [basset_sad.py]
+- [Visualization](docs/visualization.md)
+  - [basset_motifs.py](docs/visualization.md#motifs)
+  - [basset_motifs_infl.py](docs/visualization.md#infl)
+  - [basset_sat.py](docs/visualization.md#sat)
+  - [basset_sat_vcf.py](docs/visualization.md#sat_vcf)
+  - [basset_sad.py](docs/visualization.md#sad)
 
 ---------------------------------------------------------------------------------------------------
 ### Tutorials

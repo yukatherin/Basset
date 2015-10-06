@@ -1,5 +1,5 @@
 ### Basset
-###### Convolutional artificial neural network analysis for DNA sequences.
+###### Deep convolutional neural networks for DNA sequence analysis.
 --------------------------------------------------------------------------------
 ### File specifications
 

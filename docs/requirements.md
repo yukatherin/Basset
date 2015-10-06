@@ -1,5 +1,5 @@
 ### Basset
-###### Convolutional artificial neural network analysis for DNA sequences.
+###### Deep convolutional neural networks for DNA sequence analysis.
 --------------------------------------------------------------------------------
 ## Full requirement list
 - [Torch7](http://torch.ch/docs/getting-started.html)
