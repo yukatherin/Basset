@@ -35,7 +35,7 @@ def main():
     parser = OptionParser(usage)
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5.')
     parser.add_option('-o', dest='out_dir', default='.')
-    parser.add_option('-m', dest='meme_db', default='%s/data/motifs/Homo_sapiens.meme' % os.environ['BASSETDIR'])
+    parser.add_option('-m', dest='meme_db', default='%s/data/motifs/Homo_sapiens.meme' % os.environ['BASSETDIR'], help='MEME database to compare motifs to')
     parser.add_option('-s', dest='sample', default=None, type='int', help='Sample sequences from the test set [Default:%default]')
     parser.add_option('-t', dest='trim_filters', default=False, action='store_true', help='Trim uninformative positions off the filter ends [Default: %default]')
     (options,args) = parser.parse_args()
