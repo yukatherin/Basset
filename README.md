@@ -56,11 +56,10 @@ Ideally, the text here links to that page section.
   - [preprocess_features.py](docs/preprocess.md#preprocess_features.py)
   - [seq_hdf5.py](docs/preprocess.md#seq_hdf.py)
   - [basset_sample.py](docs/preprocess.md#basset_sample.py)
-- Train
-  - [basset_train.lua]
-- Predict
-  - [basset_test.lua]
-  - [basset_predict.lua]
+- Learning
+  - [basset_train.lua](docs/learning.md#train)
+  - [basset_test.lua](docs/learning.md#test)
+  - [basset_predict.lua](docs/learning.md#predict)
 - Visualization
   - [basset_motifs.py]
   - [basset_motifs_infl.py]
