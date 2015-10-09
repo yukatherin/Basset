@@ -3,10 +3,26 @@
 ROC = {}
 ROC.__index = ROC
 
-function variance_explained(Y, preds)
-    local Y_var = (Y - Y:mean(1):expand(#Y)):pow(2):mean(1)
-    local pred_var = (preds - Y):pow(2):mean(1)
-    local R2s = torch.Tensor(#Y_var):fill(1) - torch.cdiv(pred_var, Y_var)
+function variance_explained(Yf, preds)
+    local num_seqs = Yf:dataspaceSize()[1]
+    local Ydim = Yf:dataspaceSize()[2]
+
+    local R2s = torch.Tensor(Ydim)
+    for yi = 1,Ydim do
+        -- read Yi from file
+        local Yi = Yf:partial({1,num_seqs},{yi,yi}):squeeze()
+
+        -- subset to preds i
+        local preds_i = preds[{{},yi}]
+
+        -- compute variances
+        local Yi_var = Yi:var()
+        local preds_var = preds_i:var()
+
+        -- save
+        R2s[yi] = 1.0 - preds_var/Yi_var
+    end
+
     return R2s
 end
 

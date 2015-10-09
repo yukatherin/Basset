@@ -27,48 +27,47 @@ end
 --
 -- Reset the final layer for new targets.
 ----------------------------------------------------------------
-function ConvNet:adjust_final(num_targets)
+function ConvNet:adjust_final(num_targets, target_type)
     -- re-specify num targets
     self.num_targets = num_targets
 
+    -- re-specify target_type
+    local target_type_seed = self.target_type
+    self.target_type = target_type or self.target_type
+
+    -- remove nonlinearity
+    if target_type_seed == "binary" or target_type_seed == "positive" then
+        self.model:remove()
+    end
+
+     -- save input size
+    local hidden_in = self.model.modules[#self.model].weight:size(2)
+
+    -- remove Linear
+    self.model:remove()
+
+    -- add final linear
+    self.model:add(nn.Linear(hidden_in, self.num_targets))
+
     if self.target_type == "binary" then
-        -- remove Sigmoid
-        self.model:remove()
-
-        -- save input size
-        local hidden_in = self.model.modules[#self.model].weight:size(2)
-
-        -- remove Linear
-        self.model:remove()
-
-        -- final layer
-        self.model:add(nn.Linear(hidden_in, self.num_targets))
+        -- add final nonlinearity
         self.model:add(nn.Sigmoid())
 
+        -- binary cross-entropy loss
+        self.criterion = nn.BCECriterion()
+
     elseif self.target_type == "positive" then
-        -- remove ReLU
-        self.model:remove()
-
-        -- save input size
-        local hidden_in = self.model.modules[#self.model].weight:size(2)
-
-        -- remove Linear
-        self.model:remove()
-
-        -- final layer
-        self.model:add(nn.Linear(hidden_in, self.num_targets))
+        -- binary cross-entropy loss
         self.model:add(nn.ReLU())
 
+        -- mean-squared error loss
+        self.criterion = nn.MSECriterion()
     else
-        -- save input size
-        local hidden_in = self.model.modules[#self.model].weight:size(2)
-
-        -- remove Linear
-        self.model:remove()
-
-        -- final layer
-        self.model:add(nn.Linear(hidden_in, self.num_targets))
+        -- mean-squared error loss
+        self.criterion = nn.MSECriterion()
     end
+
+    self.criterion.sizeAverage = false
 
     -- cuda
     if cuda then
@@ -677,7 +676,7 @@ function ConvNet:test(Xf, Yf, batch_size)
         return avg_loss, AUCs, roc_points
     else
         -- compute R2
-        local R2s = variance_explained(Y, preds)
+        local R2s = variance_explained(Yf, preds)
 
         return avg_loss, R2s
     end

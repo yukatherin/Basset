@@ -81,6 +81,9 @@ else
             else
                 -- just save the value
                 job[k] = tonumber(v)
+                if job[k] == nil then
+                    job[k] = v
+                end
             end
         end
         line = job_in:read()
@@ -100,7 +103,7 @@ if opt.restart ~= '' then
 elseif opt.seed ~= '' then
     local convnet_params = torch.load(opt.seed)
     convnet:load(convnet_params)
-    convnet:adjust_final(num_targets)
+    convnet:adjust_final(num_targets, job.target_type)
     convnet:adjust_optim(job)
 else
     build_success = convnet:build(job, init_depth, seq_len, num_targets)
