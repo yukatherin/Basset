@@ -23,6 +23,7 @@ def main():
     parser = OptionParser(usage)
     parser.add_option('-b', dest='batch_size', default=None, type='int', help='Align sizes with batch size')
     parser.add_option('-c', dest='counts', default=False, action='store_true', help='Validation and training proportions are given as raw counts [Default: %default]')
+    parser.add_option('-e', dest='extend_length', type='int', default=None, help='Extend all sequences to this length [Default: %default]')
     parser.add_option('-r', dest='permute', default=False, action='store_true', help='Permute sequences [Default: %default]')
     parser.add_option('-s', dest='random_seed', default=1, type='int', help='numpy.random seed [Default: %default]')
     parser.add_option('-t', dest='test_pct', default=0, type='float', help='Test % [Default: %default]')
@@ -42,7 +43,7 @@ def main():
     #################################################################
     # load data
     #################################################################
-    seqs, targets = dna_io.load_data_1hot(fasta_file, targets_file, mean_norm=False, whiten=False, permute=False, sort=False)
+    seqs, targets = dna_io.load_data_1hot(fasta_file, targets_file, extend_len=options.extend_length, mean_norm=False, whiten=False, permute=False, sort=False)
 
     # reshape sequences for torch
     seqs = seqs.reshape((seqs.shape[0],4,1,seqs.shape[1]/4))

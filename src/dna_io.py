@@ -101,6 +101,7 @@ def check_order(seq_vecs, fasta_file):
 # Output
 #  seq_vec: Flattened column vector
 ################################################################################
+'''
 def dna_one_hot(seq, seq_len=None):
     if seq_len == None:
         seq_len = len(seq)
@@ -118,6 +119,42 @@ def dna_one_hot(seq, seq_len=None):
         except:
             # print >> sys.stderr, 'Non-ACGT nucleotide encountered'
             seq_code[:,i] = 0.25
+
+    # flatten and make a column vector 1 x len(seq)
+    seq_vec = seq_code.flatten()[None,:]
+
+    return seq_vec
+'''
+
+def dna_one_hot(seq, seq_len=None):
+    if seq_len == None:
+        seq_len = len(seq)
+        seq_start = 0
+    else:
+        if seq_len <= len(seq):
+            # trim the sequence
+            seq_trim = (len(seq)-seq_len)/2
+            seq = seq[seq_trim:seq_trim+seq_len]
+            seq_start = 0
+        else:
+            seq_start = (seq_len-len(seq))/2
+
+    seq = seq.replace('A','0')
+    seq = seq.replace('C','1')
+    seq = seq.replace('G','2')
+    seq = seq.replace('T','3')
+
+    # map nt's to a matrix 4 x len(seq) of 0's and 1's.
+    seq_code = np.zeros((4,seq_len), dtype='int8')
+    for i in range(seq_len):
+        if i < seq_start:
+            seq_code[:,i] = 0.25
+        else:
+            try:
+                seq_code[int(seq[i-seq_start]),i] = 1
+            except:
+                # print >> sys.stderr, 'Non-ACGT nucleotide encountered'
+                seq_code[:,i] = 0.25
 
     # flatten and make a column vector 1 x len(seq)
     seq_vec = seq_code.flatten()[None,:]
@@ -195,26 +232,30 @@ def hash_scores(scores_file):
 #
 # Input
 #  fasta_file:  Input FASTA file.
+#  extend_len:  Extend the sequences to this length.
 #
 # Output
 #  seq_vecs:    Dict mapping FASTA headers to sequence representation vectors.
 ################################################################################
-def hash_sequences_1hot(fasta_file):
+def hash_sequences_1hot(fasta_file, extend_len=None):
     # determine longest sequence
-    seq_len = 0
-    seq = ''
-    for line in open(fasta_file):
-        if line[0] == '>':
-            if seq:
-                seq_len = max(seq_len, len(seq))
+    if extend_len is not None:
+        seq_len = extend_len
+    else:
+        seq_len = 0
+        seq = ''
+        for line in open(fasta_file):
+            if line[0] == '>':
+                if seq:
+                    seq_len = max(seq_len, len(seq))
 
-            header = line[1:].rstrip()
-            seq = ''
-        else:
-            seq += line.rstrip()
+                header = line[1:].rstrip()
+                seq = ''
+            else:
+                seq += line.rstrip()
 
-    if seq:
-        seq_len = max(seq_len, len(seq))
+        if seq:
+            seq_len = max(seq_len, len(seq))
 
     # load and code sequences
     seq_vecs = OrderedDict()
@@ -246,9 +287,9 @@ def hash_sequences_1hot(fasta_file):
 #  train_seqs:    Matrix with sequence vector rows.
 #  train_scores:  Matrix with score vector rows.
 ################################################################################
-def load_data_1hot(fasta_file, scores_file, mean_norm=True, whiten=False, permute=True, sort=False):
+def load_data_1hot(fasta_file, scores_file, extend_len=None, mean_norm=True, whiten=False, permute=True, sort=False):
     # load sequences
-    seq_vecs = hash_sequences_1hot(fasta_file)
+    seq_vecs = hash_sequences_1hot(fasta_file, extend_len)
 
     # load scores
     seq_scores = hash_scores(scores_file)
@@ -369,7 +410,7 @@ def one_hot_set(seq_vec, pos, nt):
 
 
 def vecs2dna(seq_vecs):
-    ''' one_hot_set
+    ''' vecs2dna
 
     Input:
         seq_vecs:
