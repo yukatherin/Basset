@@ -108,6 +108,7 @@ def main():
     filter_infl_targets = np.array(model_hdf5_in['filter_infl_targets'])
     model_hdf5_in.close()
 
+
     #############################################################
     # use target-based influence
     #############################################################
@@ -208,7 +209,7 @@ def main():
     # use only high information filters
     if options.informative_only and df_motifs is not None:
         df_ft = df_ft[df_moitfs.ic > 6]
-    else:
+    elif df_ft.shape[1] >= 10:
         df_ft_stds = df_ft.std(axis=1)
         df_ft = df_ft[df_ft_stds > 0]
 
@@ -220,11 +221,11 @@ def main():
         subset_mask = df_ft.columns.isin(target_subset)
         df_ft_sub = df_ft.loc[:,subset_mask]
 
-        plot_heatmaps(df_ft_sub, options.out_dir, options.heat_width, options.heat_height, options.heat_font)
+        plot_infl_heatmaps(df_ft_sub, options.out_dir, options.heat_width, options.heat_height, options.heat_font)
 
     # plot all cells
     else:
-        plot_heatmaps(df_ft, options.out_dir, options.heat_width, options.heat_height, options.heat_font)
+        plot_infl_heatmaps(df_ft, options.out_dir, options.heat_width, options.heat_height, options.heat_font)
 
 
 def coord_range(nums, buf_pct=0.05):
@@ -275,43 +276,46 @@ def name_targets(num_targets, targets_file):
     return target_names
 
 
-def plot_heatmaps(unit_target_deltas, out_dir, width=10, height=20, font=0.4):
+def plot_heat(mat, out_pdf, width, height):
+    ''' Plot a single filter influence heat map'''
+
+    print mat.shape
+
+    if mat.shape[1] > 2:
+        plt.figure()
+        g = sns.clustermap(mat, figsize=(width,height))
+
+        for tick in g.ax_heatmap.get_xticklabels():
+            tick.set_rotation(-45)
+            tick.set_horizontalalignment('left')
+    else:
+        plt.figure(figsize=(width,height))
+        g = sns.heatmap(mat)
+
+    plt.savefig(out_pdf)
+    plt.close()
+
+
+def plot_infl_heatmaps(unit_target_deltas, out_dir, width=10, height=20, font=0.4):
     ''' Plot a variety of heatmaps about the filter influence per cell data frame '''
 
-    # plot influences per cell
     sns.set(style='white', font_scale=font)
-    plt.figure()
-    g = sns.clustermap(unit_target_deltas, figsize=(width,height))
-    for tick in g.ax_heatmap.get_xticklabels():
-        tick.set_rotation(-45)
-        tick.set_horizontalalignment('left')
-    plt.savefig('%s/infl_target.pdf' % out_dir)
-    plt.close()
+
+    # plot influences per cell
+    plot_heat(unit_target_deltas, '%s/infl_target.pdf' % out_dir, width, height)
 
     # normalize per cell
     utd_z = preprocessing.scale(unit_target_deltas, axis=1)
     unit_target_deltas_norm = pd.DataFrame(utd_z, index=unit_target_deltas.index, columns=unit_target_deltas.columns)
 
-    plt.figure()
-    g = sns.clustermap(unit_target_deltas_norm, figsize=(width,height))
-    for tick in g.ax_heatmap.get_xticklabels():
-        tick.set_rotation(-45)
-        tick.set_horizontalalignment('left')
-    plt.savefig('%s/infl_target_norm.pdf' % out_dir)
-    plt.close()
+    plot_heat(unit_target_deltas_norm, '%s/infl_target_norm.pdf' % out_dir, width, height)
 
     # use only annotated filters
     annotated = np.array([label.find('_')!=-1 for label in unit_target_deltas_norm.index])
     unit_target_deltas_ann = unit_target_deltas_norm[annotated]
-    print unit_target_deltas_ann.shape
 
-    plt.figure()
-    g = sns.clustermap(unit_target_deltas_ann, figsize=(width,height))
-    for tick in g.ax_heatmap.get_xticklabels():
-        tick.set_rotation(-45)
-        tick.set_horizontalalignment('left')
-    plt.savefig('%s/infl_target_ann.pdf' % out_dir)
-    plt.close()
+    if unit_target_deltas_ann.shape[0] > 0:
+        plot_heat(unit_target_deltas_ann, '%s/infl_target_ann.pdf' % out_dir, width, height)
 
 
 ################################################################################
