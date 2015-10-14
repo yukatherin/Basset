@@ -26,6 +26,7 @@ def main():
     parser = OptionParser(usage)
     parser.add_option('-a', dest='input_activity_file', help='Optional activity table corresponding to an input FASTA file')
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5 [Default: %default]')
+    parser.add_option('-g', dest='gain_height', default=False, action='store_true', help='Nucleotide heights determined by the max of loss and gain [Default: %default]')
     parser.add_option('-m', dest='min_limit', default=0.1, type='float', help='Minimum heatmap limit [Default: %default]')
     parser.add_option('-n', dest='center_nt', default=200, type='int', help='Center nt to mutate and plot in the heat map [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='heat', help='Output directory [Default: %default]')
@@ -156,9 +157,9 @@ def main():
 
     # decide which cells to plot
     if options.targets == '-1':
-        plot_cells = xrange(scores.shape[1])
+        plot_targets = xrange(seq_mod_preds.shape[3])
     else:
-        plot_cells = [int(ci) for ci in options.targets.split(',')]
+        plot_targets = [int(ci) for ci in options.targets.split(',')]
 
 
     #################################################################
@@ -170,11 +171,14 @@ def main():
 
     nts = 'ACGT'
     for si in range(seq_mod_preds.shape[0]):
-        header = seq_headers[si]
+        try:
+            header = seq_headers[si]
+        except TypeError:
+            header = 'seq%d' % si
         seq = seqs[si]
 
         # plot some descriptive heatmaps for each individual cell type
-        for ci in plot_cells:
+        for ci in plot_targets:
             seq_mod_preds_cell = seq_mod_preds[si,:,:,ci]
             real_pred_cell = get_real_pred(seq_mod_preds_cell, seq)
 
@@ -189,9 +193,9 @@ def main():
             sns.axes_style({'axes.linewidth':1})
             heat_cols = 400
             sad_start = 1
-            sad_end = 322
+            sad_end = 323
             logo_start = 0
-            logo_end = 323
+            logo_end = 324
             fig = plt.figure(figsize=(20,3))
             ax_logo = plt.subplot2grid((3,heat_cols), (0,logo_start), colspan=(logo_end-logo_start))
             ax_sad = plt.subplot2grid((3,heat_cols), (1,sad_start), colspan=(sad_end-sad_start))
@@ -199,7 +203,10 @@ def main():
 
             # print a WebLogo of the sequence
             vlim = max(options.min_limit, abs(minmax_matrix).max())
-            seq_heights = 0.25 + 1.75/vlim*(-minmax_matrix[0])
+            if options.gain_height:
+                seq_heights = 0.25 + 1.75/vlim*(abs(minmax_matrix).max(axis=0))
+            else:
+                seq_heights = 0.25 + 1.75/vlim*(-minmax_matrix[0])
             logo_eps = '%s/%s_c%d_seq.eps' % (options.out_dir, header_filename(header), ci)
             seq_logo(seq, seq_heights, logo_eps)
 
@@ -213,6 +220,7 @@ def main():
             # plot loss and gain SAD scores
             ax_sad.plot(-minmax_matrix[0], c=rdbu[0], label='loss', linewidth=1)
             ax_sad.plot(minmax_matrix[1], c=rdbu[-1], label='gain', linewidth=1)
+            ax_sad.set_xlim(0,minmax_matrix.shape[1])
             ax_sad.legend()
             # ax_sad.grid(True, linestyle=':')
             for axis in ['top','bottom','left','right']:
