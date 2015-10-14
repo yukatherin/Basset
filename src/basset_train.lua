@@ -149,7 +149,7 @@ while epoch <= opt.max_epochs and epoch - epoch_best <= opt.stagnant_t do
 
     local valid_acc_avg = torch.mean(valid_acc)
     local acc_str
-    if convnet.mode == "binary" then
+    if convnet.target_type == "binary" then
         acc_str = string.format("AUC = %.4f", valid_acc_avg)
     else
         acc_str = string.format("R2 = %.4f", valid_acc_avg)
