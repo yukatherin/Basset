@@ -74,7 +74,7 @@ These are a work in progress, so forgive incompleteness for the moment. If there
   - [Prepare new dataset(s) by adding to a compendium.](tutorials/new_data_many.ipynb)
   - [Prepare new dataset(s) in isolation.](tutorials/new_data_iso.ipynb)
 - Train
-  - [Train a model.](tutorials/train.ipynb)
+  - [Train a model.](tutorials/train.md)
 - Test
   - [Test a trained model.](tutorials/test.ipynb)
 - Visualization
