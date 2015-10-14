@@ -40,6 +40,9 @@ convnet.model:evaluate()
 
 local num_filters = convnet.conv_filters[1]
 local final_i = #convnet.model.modules - 1
+if convnet.target_type == "continuous" then
+    final_i = final_i + 1
+end
 local conv_i = 1
 while tostring(convnet.model.modules[conv_i]) ~= "nn.ReLU" do
     conv_i = conv_i + 1
@@ -85,8 +88,8 @@ while Xb ~= nil do
 
     -- compute final layer stats
     local final_output = convnet.model.modules[final_i].output
-    local final_means = final_output:mean(1):squeeze()
-    local final_stds = final_output:std(1):squeeze()
+    local final_means = final_output:mean(1):reshape(num_targets)
+    local final_stds = final_output:std(1):reshape(num_targets)
     local final_var = torch.pow(final_stds,2)
 
     --------------------------------------------------
@@ -136,7 +139,7 @@ while Xb ~= nil do
 			end
 			zpreds = currentOutput
             zfinal_output = convnet.model.modules[final_i].output
-            zfinal_means = zfinal_output:mean(1):squeeze()
+            zfinal_means = zfinal_output:mean(1):reshape(num_targets)
 
 			-- re-compute loss
 			zloss = convnet.criterion:forward(zpreds, Yb)
