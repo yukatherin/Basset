@@ -52,6 +52,9 @@ def main():
     # get one hot coded input sequences
     seqs_1hot, seqs, seq_headers = vcf.snps_seq1(snps, options.genome_fasta, options.seq_len)
 
+    # reshape sequences for torch
+    seqs_1hot = seqs_1hot.reshape((seqs_1hot.shape[0],4,1,seqs_1hot.shape[1]/4))
+
     # write to HDF5
     model_input_hdf5 = '%s/model_in.h5'%options.out_dir
     h5f = h5py.File(model_input_hdf5, 'w')
