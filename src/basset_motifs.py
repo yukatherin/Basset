@@ -95,6 +95,7 @@ def main():
     if options.model_hdf5_file is None:
         options.model_hdf5_file = '%s/model_out.h5' % options.out_dir
         torch_cmd = 'basset_motifs_predict.lua %s %s %s' % (model_file, test_hdf5_file, options.model_hdf5_file)
+        print torch_cmd
         subprocess.call(torch_cmd, shell=True)
 
     # load model output
@@ -231,11 +232,14 @@ def make_filter_pwm(filter_fasta):
             if len(pwm_counts) == 0:
                 # initialize with the length
                 for i in range(len(seq)):
-                    pwm_counts.append([1]*4)
+                    pwm_counts.append(np.array([1.0]*4))
 
             # count
             for i in range(len(seq)):
-                pwm_counts[i][nts[seq[i]]] += 1
+                try:
+                    pwm_counts[i][nts[seq[i]]] += 1
+                except KeyError:
+                    pwm_counts[i] += np.array([0.25]*4)
 
     # normalize
     pwm_freqs = []
@@ -295,7 +299,10 @@ def meme_intro(meme_file, seqs):
     nt_counts = [1]*4
     for i in range(len(seqs)):
         for nt in seqs[i]:
-            nt_counts[nts[nt]] += 1
+            try:
+                nt_counts[nts[nt]] += 1
+            except KeyError:
+                pass
 
     # normalize
     nt_sum = float(sum(nt_counts))
