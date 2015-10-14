@@ -30,6 +30,7 @@ def main():
     parser.add_option('-m', dest='min_limit', default=0.1, type='float', help='Minimum heatmap limit [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='sad', help='Output directory for tables and plots [Default: %default]')
     parser.add_option('-s', dest='score', default=False, action='store_true', help='SNPs are labeled with scores as column 7 [Default: %default]')
+    parser.add_option('-t', dest='targets_file', default=None, help='File specifying target indexes and labels in table format')
     (options,args) = parser.parse_args()
 
     if len(args) != 2:
@@ -51,6 +52,9 @@ def main():
         # get one hot coded input sequences
         seq_vecs, seqs, seq_headers = vcf.snps_seq1(snps, options.genome_fasta, options.seq_len)
 
+        # reshape sequences for torch
+        seq_vecs = seq_vecs.reshape((seq_vecs.shape[0],4,1,seq_vecs.shape[1]/4))
+
         # write to HDF5
         h5f = h5py.File('%s/model_in.h5'%options.out_dir, 'w')
         h5f.create_dataset('test_in', data=seq_vecs)
@@ -62,7 +66,9 @@ def main():
     #################################################################
     if options.model_hdf5_file is None:
         options.model_hdf5_file = '%s/model_out.txt' % options.out_dir
-        subprocess.call('basset_predict.lua -norm %s %s/model_in.h5 %s' % (model_th, options.out_dir, options.model_hdf5_file), shell=True)
+        cmd = 'basset_predict.lua -norm %s %s/model_in.h5 %s' % (model_th, options.out_dir, options.model_hdf5_file)
+        print cmd
+        subprocess.call(cmd, shell=True)
 
     # read in predictions
     seq_preds = []
@@ -76,7 +82,7 @@ def main():
     #################################################################
     sad_out = open('%s/sad_table.txt' % options.out_dir, 'w')
 
-    header_cols = ('rsid', 'index', 'score', 'ref', 'alt', 'cell', 'ref_pred', 'alt pred', 'sad')
+    header_cols = ('rsid', 'index', 'score', 'ref', 'alt', 'target', 'ref_pred', 'alt pred', 'sad')
     print >> sad_out, ' '.join(header_cols)
 
     # hash by index snp
@@ -127,25 +133,46 @@ def main():
     #################################################################
     # plot SAD heatmaps
     #################################################################
+    if options.targets_file is not None:
+        target_labels = [line.split()[0] for line in open(options.targets_file)]
+
     for ii in sad_matrices:
         # convert fully to numpy arrays
         sad_matrix = abs(np.array(sad_matrices[ii]))
         print ii, sad_matrix.shape
 
         if sad_matrix.shape[0] > 1:
-            # plot heatmap
-            plt.figure(figsize=(20, 0.5*sad_matrix.shape[0]))
-
-            # lay out scores
-            cols = 12
-            ax_score = plt.subplot2grid((1,cols), (0,0))
-            ax_sad = plt.subplot2grid((1,cols), (0,1), colspan=(cols-1))
-
-            score_mat = np.reshape(np.array(sad_scores[ii]), (-1, 1))
-            sns.heatmap(score_mat, xticklabels=False, yticklabels=False, vmin=0, vmax=1, cmap='Reds', cbar=False, ax=ax_score)
-
             vlim = max(options.min_limit, sad_matrix.max())
-            sns.heatmap(sad_matrix, xticklabels=False, yticklabels=sad_labels[ii], vmin=0, vmax=vlim, ax=ax_sad)
+            score_mat = np.reshape(np.array(sad_scores[ii]), (-1, 1))
+
+            if options.targets_file is None:
+                # plot heatmap
+                plt.figure(figsize=(20, 0.5*sad_matrix.shape[0]))
+
+                # lay out scores
+                cols = 12
+                ax_score = plt.subplot2grid((1,cols), (0,0))
+                ax_sad = plt.subplot2grid((1,cols), (0,1), colspan=(cols-1))
+
+                sns.heatmap(score_mat, xticklabels=False, yticklabels=False, vmin=0, vmax=1, cmap='Reds', cbar=False, ax=ax_score)
+                sns.heatmap(sad_matrix, xticklabels=False, yticklabels=sad_labels[ii], vmin=0, vmax=vlim, ax=ax_sad)
+
+            else:
+                # plot heatmap
+                plt.figure(figsize=(20, 0.5 + 0.5*sad_matrix.shape[0]))
+
+                # lay out scores
+                cols = 12
+                ax_score = plt.subplot2grid((1,cols), (0,0))
+                ax_sad = plt.subplot2grid((1,cols), (0,1), colspan=(cols-1))
+
+                sns.heatmap(score_mat, xticklabels=False, yticklabels=False, vmin=0, vmax=1, cmap='Reds', cbar=False, ax=ax_score)
+                sns.heatmap(sad_matrix, xticklabels=target_labels, yticklabels=sad_labels[ii], vmin=0, vmax=vlim, ax=ax_sad)
+
+                for tick in ax_sad.get_xticklabels():
+                    tick.set_rotation(-45)
+                    tick.set_horizontalalignment('left')
+                    tick.set_fontsize(5)
 
             plt.tight_layout()
             if ii == '.':
