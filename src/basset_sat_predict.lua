@@ -58,7 +58,7 @@ local num_targets = (#preds)[2]
 
 -- normalize predictions
 local preds_means
-if not opt.raw_prob then
+if convnet.target_type == "binary" and not opt.raw_prob then
     preds_means = preds:mean(1):squeeze()
     preds = troy_norm(preds, preds_means)
 end
@@ -112,7 +112,7 @@ for si=1,num_seqs do
     local mod_prepreds = convnet.model.modules[fl].output:clone()
 
     -- normalize predictions
-    if not opt.raw_prob then
+    if convnet.target_type == "binary" and not opt.raw_prob then
         mod_preds = troy_norm(mod_preds, preds_means)
     end
 
