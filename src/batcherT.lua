@@ -10,7 +10,7 @@ function BatcherT:__init(X, Y, batch_size, permute)
 
     bat.num_seqs = (#X)[1]
 
-    bat.batch_size = batch_size or 200
+    bat.batch_size = batch_size or 128
     bat.permute = permute or false
 
     bat:reset()

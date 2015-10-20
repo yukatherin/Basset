@@ -131,7 +131,7 @@ convnet.model:training()
 local epoch = 1
 local epoch_best = 1
 local valid_best = math.huge
-local batcher = Batcher:__init(train_seqs, train_targets, batch_size)
+local batcher = Batcher:__init(train_seqs, train_targets)
 
 while epoch <= opt.max_epochs and epoch - epoch_best <= opt.stagnant_t do
     io.write(string.format("Epoch #%3d   ", epoch))

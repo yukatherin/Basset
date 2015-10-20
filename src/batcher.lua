@@ -15,7 +15,7 @@ function Batcher:__init(Xf, Yf, batch_size)
         bat.num_targets = Yf:dataspaceSize()[2]
     end
 
-    bat.batch_size = batch_size or 200
+    bat.batch_size = batch_size or 128
 
     bat:reset()
 

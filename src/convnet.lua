@@ -93,7 +93,7 @@ function ConvNet:adjust_optim(job)
     self.optim_state.m = nil
 
     -- number of examples per weight update
-    self.batch_size = job.batch_size or 200
+    self.batch_size = job.batch_size or 128
 
     -- base learning rate
     self.learning_rate = job.learning_rate or 0.002
@@ -154,8 +154,10 @@ function ConvNet:build(job, init_depth, init_len, num_targets)
         if self.pool_width[i] > 1 then
             if self.pool_op == "max" then
                 -- trimming the seq
-                pseq_len = math.floor(seq_len / self.pool_width[i])
-                self.model:add(nn.SpatialMaxPooling(self.pool_width[i], 1))
+                pseq_len = math.ceil(seq_len / self.pool_width[i])
+                pool_mod = nn.SpatialMaxPooling(self.pool_width[i], 1)
+                pool_mod:ceil()
+                self.model:add(pool_mod)
             else
                 pseq_len = math.floor(seq_len / self.pool_width[i])
                 self.model:add(inn.SpatialStochasticPooling(self.pool_width[i],1))
@@ -242,18 +244,18 @@ function ConvNet:build(job, init_depth, init_len, num_targets)
     -- print model summary
     print(self.model)
 
--- the following code breaks the program, but it's
--- interesting to see those counts!
+    -- the following code breaks the program, but
+    -- it's interesting to see those counts!
 
--- print(string.format("Sum:      %7d parameters",(#self.parameters)[1]))
--- for i = 1,(#self.model) do
--- 	local layer_params = self.model.modules[i]:getParameters()
--- 	local np = 0
--- 	if layer_params:nDimension() > 0 then
--- 		np = (#layer_params)[1]
--- 	end
--- 	print(string.format("Layer %2d: %7d", i, np))
--- end
+    -- print(string.format("Sum:      %7d parameters",(#self.parameters)[1]))
+    -- for i = 1,(#self.model) do
+    -- 	local layer_params = self.model.modules[i]:getParameters()
+    -- 	local np = 0
+    -- 	if layer_params:nDimension() > 0 then
+    -- 		np = (#layer_params)[1]
+    -- 	end
+    -- 	print(string.format("Layer %2d: %7d", i, np))
+    -- end
 
     return true
 end
@@ -393,7 +395,7 @@ function ConvNet:setStructureParams(job)
     -- training
     ---------------------------------------------
     -- number of examples per weight update
-    self.batch_size = job.batch_size or 200
+    self.batch_size = job.batch_size or 128
 
     -- base learning rate
     self.learning_rate = job.learning_rate or 0.002
