@@ -93,7 +93,7 @@ def main():
         subprocess.call(cmd, shell=True)
 
         # preprocess
-        cmd = 'preprocess_features.py -y -m 200 -s 600 -o encode_roadmap -c genomes/hg19.fa sample_beds.txt'
+        cmd = 'preprocess_features.py -y -m 200 -s 600 -o encode_roadmap -c human.hg19.genome sample_beds.txt'
         subprocess.call(cmd, shell=True)
 
         # make a FASTA file

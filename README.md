@@ -15,11 +15,6 @@ First, I recommend installing Torch7 from [here](http://torch.ch/docs/getting-st
 
 For the Python dependencies, I highly recommend the [Anaconda distribution](https://www.continuum.io/downloads). The only library missing is pysam, which you can install through Anaconda or manually from [here](https://code.google.com/p/pysam/).
 
-To download and install the remaining dependencies, run
-```
-    ./install_dependencies.py
-```
-
 Basset relies on the environmental variable BASSETDIR to orient itself. In your startup script (e.g. .bashrc), write
 ```
     export BASSETDIR=the/dir/where/basset/is/installed
@@ -30,6 +25,11 @@ To make the code available for use in any directory, also write
     export PATH=$BASSETDIR/src:$PATH
     export LUAPATH=$BASSETDIR/src:$LUAPATH
     export PYTHONPATH=$BASSETDIR/src:$PYTHONPATH
+```
+
+To download and install the remaining dependencies, run
+```
+    ./install_dependencies.py
 ```
 
 To download and install additional useful data, like my best pre-trained model and public datasets, run
