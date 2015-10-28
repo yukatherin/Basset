@@ -27,6 +27,7 @@ def main():
     parser = OptionParser(usage)
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5 [Default: %default]')
     parser.add_option('-f', dest='genome_fasta', default='%s/data/genomes/hg19.fa'%os.environ['BASSETDIR'], help='Genome FASTA from which sequences will be drawn [Default: %default]')
+    parser.add_option('-g', dest='gain_height', default=False, action='store_true', help='Nucleotide heights determined by the max of loss and gain [Default: %default]')
     parser.add_option('-l', dest='seq_len', type='int', default=600, help='Sequence length provided to the model [Default: %default]')
     parser.add_option('-m', dest='min_limit', default=0.1, type='float', help='Minimum heatmap limit [Default: %default]')
     parser.add_option('-n', dest='center_nt', default=200, type='int', help='Nt around the SNP to mutate and plot in the heatmap [Default: %default]')
@@ -121,9 +122,9 @@ def main():
             sns.axes_style({'axes.linewidth':1})
             heat_cols = 400
             sad_start = 1
-            sad_end = 322
+            sad_end = 323
             logo_start = 0
-            logo_end = 323
+            logo_end = 324
             fig = plt.figure(figsize=(20,3))
             ax_logo = plt.subplot2grid((3,heat_cols), (0,logo_start), colspan=(logo_end-logo_start))
             ax_sad = plt.subplot2grid((3,heat_cols), (1,sad_start), colspan=(sad_end-sad_start))
@@ -131,7 +132,10 @@ def main():
 
             # print a WebLogo of the sequence
             vlim = max(options.min_limit, abs(minmax_matrix).max())
-            seq_heights = 0.25 + 1.75/vlim*(-minmax_matrix[0])
+            if options.gain_height:
+                seq_heights = 0.25 + 1.75/vlim*(abs(minmax_matrix).max(axis=0))
+            else:
+                seq_heights = 0.25 + 1.75/vlim*(-minmax_matrix[0])
             logo_eps = '%s/%s_c%d_seq.eps' % (options.out_dir, header.replace(':','_'), ci)
             seq_logo(seq, seq_heights, logo_eps)
 
@@ -145,6 +149,7 @@ def main():
             # plot loss and gain SAD scores
             ax_sad.plot(-minmax_matrix[0], c=rdbu[0], label='loss', linewidth=1)
             ax_sad.plot(minmax_matrix[1], c=rdbu[-1], label='gain', linewidth=1)
+            ax_sad.set_xlim(0,minmax_matrix.shape[1])
             ax_sad.legend()
             # ax_sad.grid(True, linestyle=':')
             for axis in ['top','bottom','left','right']:
