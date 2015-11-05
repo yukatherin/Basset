@@ -34,6 +34,7 @@ def main():
     parser.add_option('-o', dest='out_dir', default='.')
     parser.add_option('--subset', dest='subset_file', default=None, help='Subset targets to the ones in this file')
     parser.add_option('-s', dest='sample', default=None, type='int', help='Sample sequences from the test set [Default:%default]')
+    parser.add_option('--seqs', dest='seqs', default=False, action='store_true', help='Output sequence-specific influence [Default: %default]')
     parser.add_option('-t', dest='targets_file', default=None, help='File specifying target indexes and labels in table format')
     parser.add_option('--width', dest='heat_width', default=10, type='float')
     parser.add_option('--height', dest='heat_height', default=20, type='float')
@@ -56,6 +57,7 @@ def main():
     test_hdf5_in = h5py.File(test_hdf5_file, 'r')
     seq_vecs = np.array(test_hdf5_in['test_in'])
     seq_targets = np.array(test_hdf5_in['test_out'])
+    seq_headers = np.array(test_hdf5_in['test_headers'])
     test_hdf5_in.close()
 
     # name the targets
@@ -80,6 +82,7 @@ def main():
         # filter
         seq_vecs = seq_vecs[sample_i]
         seq_targets = seq_targets[sample_i]
+        seq_headers = seq_headers[sample_i]
 
         # create a new HDF5 file
         sample_hdf5_file = '%s/sample.h5' % options.out_dir
@@ -96,8 +99,12 @@ def main():
     # Torch predict
     #################################################################
     if options.model_hdf5_file is None:
+        torch_opts = ''
+        if options.seqs:
+            torch_opts += '-seqs'
+
         options.model_hdf5_file = '%s/model_out.h5' % options.out_dir
-        torch_cmd = 'basset_motifs_infl.lua -batch_size %d %s %s %s' % (options.batch_size, model_file, test_hdf5_file, options.model_hdf5_file)
+        torch_cmd = 'basset_motifs_infl.lua -batch_size %d %s %s %s %s' % (options.batch_size, torch_opts, model_file, test_hdf5_file, options.model_hdf5_file)
         subprocess.call(torch_cmd, shell=True)
 
     # load model output
@@ -106,6 +113,8 @@ def main():
     filter_stds = np.array(model_hdf5_in['filter_stds'])
     filter_infl = np.array(model_hdf5_in['filter_infl'])
     filter_infl_targets = np.array(model_hdf5_in['filter_infl_targets'])
+    if options.seqs:
+        seq_filter_targets = np.array(model_hdf5_in['seq_filter_targets'])
     model_hdf5_in.close()
 
 
@@ -198,13 +207,23 @@ def main():
     # construct a panda data frame of the target influences
     df_ft = pd.DataFrame(filter_infl_targets, index=filter_names, columns=target_names)
 
-    # print filter influence per cell table
+    # print filter influence per target table
     table_out = open('%s/table_target.txt' % options.out_dir, 'w')
     for i in range(df_ft.shape[0]):
         for ti in range(len(target_names)):
             cols = (i, ti, target_names[ti], df_ft.iloc[i,ti])
             print >> table_out, '%-3d  %3d  %20s  %7.4f' % cols
     table_out.close()
+
+    # print sequence-specific filter influence per target table
+    if options.seqs:
+        table_out = open('%s/table_seqs.txt' % options.out_dir, 'w')
+        for si in range(seq_filter_targets.shape[0]):
+            for fi in range(seq_filter_targets.shape[1]):
+                for ti in range(seq_filter_targets.shape[2]):
+                    cols = (seq_headers[si], fi, ti, seq_filter_targets[si][fi][ti])
+                    print >> table_out, '%-25s  %3d  %3d  %7.4f' % cols
+        table_out.close()
 
     # use only high information filters
     if options.informative_only and df_motifs is not None:
@@ -278,8 +297,6 @@ def name_targets(num_targets, targets_file):
 
 def plot_heat(mat, out_pdf, width, height):
     ''' Plot a single filter influence heat map'''
-
-    print mat.shape
 
     if mat.shape[1] > 2:
         plt.figure()

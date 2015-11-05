@@ -24,6 +24,7 @@ cmd:argument('out_file')
 cmd:text()
 cmd:text('Options:')
 cmd:option('-batch_size', 1000, 'Batch size of sequences per compute')
+cmd:option('-seqs', false, 'Print affect on all sequences')
 cmd:text()
 opt = cmd:parse(arg)
 
@@ -63,6 +64,10 @@ local filter_means = torch.Tensor(num_filters):zero()
 local filter_stds = torch.Tensor(num_filters):zero()
 local filter_infl = torch.Tensor(num_filters):zero()
 local filter_infl_targets = torch.Tensor(num_filters, num_targets):zero()
+local seq_filter_targets
+if opt.seqs then
+    seq_filter_targets = torch.Tensor(num_seqs, num_filters, num_targets):zero()
+end
 
 ----------------------------------------------------------------
 -- predict
@@ -71,6 +76,7 @@ local filter_infl_targets = torch.Tensor(num_filters, num_targets):zero()
 local batcher = Batcher:__init(test_seqs, test_targets, opt.batch_size)
 local Xb, Yb = batcher:next()
 local batches = 1
+local sfti = 0
 
 -- while batches remain
 while Xb ~= nil do
@@ -87,7 +93,7 @@ while Xb ~= nil do
     local preds_tnorm = troy_norm(preds, preds_means)
 
     -- compute final layer stats
-    local final_output = convnet.model.modules[final_i].output
+    local final_output = convnet.model.modules[final_i].output:clone()
     local final_means = final_output:mean(1):reshape(num_targets)
     local final_stds = final_output:std(1):reshape(num_targets)
     local final_var = torch.pow(final_stds,2)
@@ -161,13 +167,27 @@ while Xb ~= nil do
 
 		-- save unit delta
 		filter_infl[fi] = filter_infl[fi] + (zloss - loss)
+        print(filter_infl[fi])
+
+        -- save sequence effects
+        if opt.seqs then
+            for bi=1,batch_size do
+                seq_filter_targets[sfti+bi][fi] = final_output[bi] - zfinal_output[bi]
+            end
+        end
 
 		collectgarbage()
 	end
 
+    -- advance sequence index
+    if opt.seqs then
+        sfti = sfti + batch_size
+    end
+
 	-- next batch
 	Xb, Yb = batcher:next()
     batches = batches + 1
+
 end
 
 -- close HDF5
@@ -190,4 +210,7 @@ hdf_out:write('filter_means', filter_means)
 hdf_out:write('filter_stds', filter_stds)
 hdf_out:write('filter_infl', filter_infl)
 hdf_out:write('filter_infl_targets', filter_infl_targets)
+if opt.seqs then
+    hdf_out:write('seq_filter_targets', seq_filter_targets)
+end
 hdf_out:close()
