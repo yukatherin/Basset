@@ -54,7 +54,7 @@ def snps_seq1(snps, genome_fasta, seq_len):
         seq_end = snp.pos + right_len + len(snp.ref_allele) - snp.longest_alt()
 
         # extract sequence as BED style
-        seq = genome.fetch(snp.chrom, seq_start-1, seq_end)
+        seq = genome.fetch(snp.chrom, seq_start-1, seq_end).upper()
 
         # verify that ref allele matches ref sequence
         seq_ref = seq[left_len:left_len+len(snp.ref_allele)]
