@@ -23,6 +23,7 @@ import vcf
 def main():
     usage = 'usage: %prog [options] <model_th> <vcf_file>'
     parser = OptionParser(usage)
+    parser.add_option('--cuda', dest='cuda', default=False, action='store_true', help='Predict on the GPU [Default: %default]')
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5 [Default: %default]')
     parser.add_option('-f', dest='genome_fasta', default='%s/data/genomes/hg19.fa'%os.environ['BASSETDIR'], help='Genome FASTA from which sequences will be drawn [Default: %default]')
     parser.add_option('-i', dest='index_snp', default=False, action='store_true', help='SNPs are labeled with their index SNP as column 6 [Default: %default]')
@@ -65,8 +66,13 @@ def main():
     # predict in Torch
     #################################################################
     if options.model_hdf5_file is None:
+        if options.cuda:
+            cuda_str = '-cuda'
+        else:
+            cuda_str = ''
+
         options.model_hdf5_file = '%s/model_out.txt' % options.out_dir
-        cmd = 'basset_predict.lua -norm %s %s/model_in.h5 %s' % (model_th, options.out_dir, options.model_hdf5_file)
+        cmd = 'basset_predict.lua -norm %s %s %s/model_in.h5 %s' % (cuda_str, model_th, options.out_dir, options.model_hdf5_file)
         print cmd
         subprocess.call(cmd, shell=True)
 
@@ -80,6 +86,9 @@ def main():
     #################################################################
     # collect and print SADs
     #################################################################
+    if options.targets_file is not None:
+        target_labels = [line.split()[0] for line in open(options.targets_file)]
+
     sad_out = open('%s/sad_table.txt' % options.out_dir, 'w')
 
     header_cols = ('rsid', 'index', 'score', 'ref', 'alt', 'target', 'ref_pred', 'alt pred', 'sad')
@@ -115,17 +124,17 @@ def main():
             # print table lines
             for ti in range(len(alt_sad)):
                 if options.index_snp and options.score:
-                    cols = (snp.rsid, snp.index_snp, snp.score, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), ti, ref_preds[ti], alt_preds[ti], alt_sad[ti])
-                    print >> sad_out, '%-13s %-13s %5.3f %6s %6s %3d %6.4f %6.4f %7.4f' % cols
+                    cols = (snp.rsid, snp.index_snp, snp.score, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
+                    print >> sad_out, '%-13s %-13s %5.3f %6s %6s %12s %6.4f %6.4f %7.4f' % cols
                 elif options.index_snp:
-                    cols = (snp.rsid, snp.index_snp, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), ti, ref_preds[ti], alt_preds[ti], alt_sad[ti])
-                    print >> sad_out, '%-13s %-13s %6s %6s %3d %6.4f %6.4f %7.4f' % cols
+                    cols = (snp.rsid, snp.index_snp, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
+                    print >> sad_out, '%-13s %-13s %6s %6s %12s %6.4f %6.4f %7.4f' % cols
                 elif options.score:
-                    cols = (snp.rsid, snp.score, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), ti, ref_preds[ti], alt_preds[ti], alt_sad[ti])
-                    print >> sad_out, '%-13s %5.3f %6s %6s %3d %6.4f %6.4f %7.4f' % cols
+                    cols = (snp.rsid, snp.score, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
+                    print >> sad_out, '%-13s %5.3f %6s %6s %12s %6.4f %6.4f %7.4f' % cols
                 else:
-                    cols = (snp.rsid, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), ti, ref_preds[ti], alt_preds[ti], alt_sad[ti])
-                    print >> sad_out, '%-13s %6s %6s %3d %6.4f %6.4f %7.4f' % cols
+                    cols = (snp.rsid, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
+                    print >> sad_out, '%-13s %6s %6s %12s %6.4f %6.4f %7.4f' % cols
 
     sad_out.close()
 
@@ -133,9 +142,6 @@ def main():
     #################################################################
     # plot SAD heatmaps
     #################################################################
-    if options.targets_file is not None:
-        target_labels = [line.split()[0] for line in open(options.targets_file)]
-
     for ii in sad_matrices:
         # convert fully to numpy arrays
         sad_matrix = abs(np.array(sad_matrices[ii]))
