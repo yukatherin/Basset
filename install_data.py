@@ -66,7 +66,7 @@ def main():
             os.remove(chrom_fa)
 
     if not options.restart or not os.path.isfile('hg19.fa.fai'):
-        cmd = 'samtools faidx genomes/hg19.fa'
+        cmd = 'samtools faidx hg19.fa'
         subprocess.call(cmd, shell=True)
 
     os.chdir('..')
