@@ -59,9 +59,7 @@ def main():
     try:
         target_names = list(test_hdf5_in['target_labels'])
     except KeyError:
-        # TEMP TEMP TEMP
-        # target_names = [str(x) for x in range(125)]
-        target_names = [line.split()[1] for line in open('../data/cell_activity.txt')]
+        target_names = ['t%d'%ti for ti in range(seq_targets.shape[1])]
     test_hdf5_in.close()
 
 
