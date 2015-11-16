@@ -86,8 +86,7 @@ def main():
         cmd = 'gunzip encode_roadmap_act.txt.gz'
         subprocess.call(cmd, shell=True)
 
-    '''
-    if not options.restart or not os.path.isfile('encode_roadmap.h5'):
+        '''
         # download and arrange available data
         cmd = './get_dnase.sh'
         subprocess.call(cmd, shell=True)
@@ -95,6 +94,7 @@ def main():
         # preprocess
         cmd = 'preprocess_features.py -y -m 200 -s 600 -o encode_roadmap -c human.hg19.genome sample_beds.txt'
         subprocess.call(cmd, shell=True)
+        '''
 
         # make a FASTA file
         cmd = 'bedtools getfasta -fi $HG19/sequence/hg19.fa -bed encode_roadmap.bed -s -fo encode_roadmap.fa'
@@ -103,7 +103,7 @@ def main():
         # make an HDF5 file
         cmd = 'seq_hdf5.py -c -r -t 71886 -v 70000 encode_roadmap.fa encode_roadmap_act.txt encode_roadmap.h5'
         subprocess.call(cmd, shell=True)
-    '''
+
 
 
 ################################################################################
