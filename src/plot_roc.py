@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 from optparse import OptionParser
 import glob, os
-from stats import quantile
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -111,6 +110,22 @@ def main():
 
     plt.savefig('%s/range.pdf'%roc_dir)
     plt.close()
+
+
+def quantile(ls, q):
+    ''' Return the value at the quantile given. '''
+    sls = sorted(ls)
+
+    if type(q) == list:
+        qval = []
+        for j in range(len(q)):
+            qi = int((len(sls)-1)*q[j])
+            qval.append(sls[qi])
+    else:
+        qi = int(len(sls)*q)
+        qval = sls[qi]
+
+    return qval
 
 
 ################################################################################
