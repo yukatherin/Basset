@@ -97,7 +97,7 @@ def main():
         '''
 
         # make a FASTA file
-        cmd = 'bedtools getfasta -fi $HG19/sequence/hg19.fa -bed encode_roadmap.bed -s -fo encode_roadmap.fa'
+        cmd = 'bedtools getfasta -fi genomes/hg19.fa -bed encode_roadmap.bed -s -fo encode_roadmap.fa'
         subprocess.call(cmd, shell=True)
 
         # make an HDF5 file
