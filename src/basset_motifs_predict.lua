@@ -1,7 +1,5 @@
 #!/usr/bin/env th
 
-require 'cunn'
-require 'cutorch'
 require 'hdf5'
 
 require 'batcher'
