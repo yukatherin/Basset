@@ -13,7 +13,7 @@ Basset has a few dependencies because it uses both Torch7 and Python and takes a
 
 First, I recommend installing Torch7 from [here](http://torch.ch/docs/getting-started.html). If you plan on training models on a GPU, make sure that you have CUDA installed and Torch should find it.
 
-For the Python dependencies, I highly recommend the [Anaconda distribution](https://www.continuum.io/downloads). The only library missing is pysam, which you can install through Anaconda or manually from [here](https://code.google.com/p/pysam/).
+For the Python dependencies, I highly recommend the [Anaconda distribution](https://www.continuum.io/downloads). The only library missing is pysam, which you can install through Anaconda or manually from [here](https://code.google.com/p/pysam/). If you don't want to use Anaconda, check out the full list of dependencies [here](docs/requirements.md).
 
 Basset relies on the environmental variable BASSETDIR to orient itself. In your startup script (e.g. .bashrc), write
 ```
@@ -36,8 +36,6 @@ To download and install additional useful data, like my best pre-trained model a
 ```
     ./install_data.py
 ```
-
-You can find the full requirement list [here](docs/requirements.md).
 
 ---------------------------------------------------------------------------------------------------
 ### Documentation
