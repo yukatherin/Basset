@@ -508,6 +508,10 @@ function ConvNet:setStructureParams(job)
 
     -- L2 parameter norm
     self.coef_l2 = job.coef_l2 or 0
+
+    -- L1 parameter norm
+    self.coef_l1 = job.coef_l1 or 0
+
 end
 
 
@@ -559,6 +563,13 @@ function ConvNet:train_epoch(batcher)
 
                 -- add to gradient
                 self.gradParameters:add(self.coef_l2, self.parameters)
+            end
+            if self.coef_l1 > 0 then
+                -- add to loss
+                f = f + self.coef_l1 * torch.norm(self.parameters,1)
+
+                -- add to gradient
+                self.gradParameters:add(torch.sign(self.parameters):mul(self.coef_l1))
             end
 
             -- return f and df/dX
