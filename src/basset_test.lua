@@ -18,6 +18,7 @@ cmd:argument('data_file')
 cmd:argument('out_dir')
 cmd:text()
 cmd:text('Options:')
+cmd:option('-batch', 128, 'Batch size')
 cmd:option('-cuda', false, 'Run on GPGPU')
 cmd:text()
 opt = cmd:parse(arg)
@@ -50,7 +51,7 @@ convnet:load(convnet_params)
 convnet.model:evaluate()
 
 -- measure accuracy on a test set
-local loss, AUCs, roc_points = convnet:test(test_seqs, test_targets)
+local loss, AUCs, roc_points = convnet:test(test_seqs, test_targets, opt.batch_size)
 local avg_auc = torch.mean(AUCs)
 
 -- cd to output dir
