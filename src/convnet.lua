@@ -355,6 +355,60 @@ end
 
 
 ----------------------------------------------------------------
+-- predict_scores
+--
+-- Predict pre-sigmoid scores for a new set of sequences.
+----------------------------------------------------------------
+function ConvNet:predict_scores(Xf, batch_size, Xtens)
+    local bs = batch_size or self.batch_size
+    local batcher
+    if Xtens then
+        batcher = BatcherT:__init(Xf, nil, bs)
+    else
+        batcher = Batcher:__init(Xf, nil, bs)
+    end
+
+    -- find final model layer
+    local final_i = #self.model.modules - 1
+    if self.target_type == "continuous" then
+        final_i = final_i + 1
+    end
+
+    -- track predictions across batches
+    local scores = torch.Tensor(batcher.num_seqs, self.num_targets)
+    local si = 1
+
+    -- get first batch
+    local Xb = batcher:next()
+
+    -- while batches remain
+    while Xb ~= nil do
+        -- cuda
+        if cuda then
+            Xb = Xb:cuda()
+        end
+
+        -- predict
+        self.model:forward(Xb)
+        scores_batch = self.model.modules[final_i].output
+
+        -- copy into larger Tensor
+        for i = 1,(#scores_batch)[1] do
+            scores[{si,{}}] = scores_batch[{i,{}}]:float()
+            si = si + 1
+        end
+
+        -- next batch
+        Xb = batcher:next()
+
+        collectgarbage()
+    end
+
+    return scores
+end
+
+
+----------------------------------------------------------------
 -- sanitize
 --
 -- Clear the intermediate states in the model before
@@ -454,22 +508,8 @@ function ConvNet:setStructureParams(job)
         end
     end
 
-    -- or determine via scaling
-    if job.conv_layers and job.conv_size_scale then
-        for i=2,job.conv_layers do
-            self.conv_filter_sizes[i] = math.ceil(job.conv_size_scale * self.conv_filter_sizes[i-1])
-        end
-    end
-
     -- pooling widths
     self.pool_width = table_ext(job.pool_width, 1, self.conv_layers)
-
-    -- or determine via scaling
-    if job.conv_layers and job.pool_width_scale then
-        for i=2,job.conv_layers do
-            self.pool_width[i] = math.ceil(job.pool_width_scale * self.pool_width[i-1])
-        end
-    end
 
     -- pooling operation ("max", "stochastic")
     self.pool_op = job.pool_op or "max"
