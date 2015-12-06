@@ -126,7 +126,7 @@ def dna_one_hot(seq, seq_len=None):
     return seq_vec
 '''
 
-def dna_one_hot(seq, seq_len=None):
+def dna_one_hot(seq, seq_len=None, flatten=True):
     if seq_len == None:
         seq_len = len(seq)
         seq_start = 0
@@ -157,7 +157,8 @@ def dna_one_hot(seq, seq_len=None):
                 seq_code[:,i] = 0.25
 
     # flatten and make a column vector 1 x len(seq)
-    seq_vec = seq_code.flatten()[None,:]
+    if flatten:
+        seq_vec = seq_code.flatten()[None,:]
 
     return seq_vec
 
@@ -435,7 +436,9 @@ def vecs2dna(seq_vecs):
                 seq_list[j] = 'G'
             elif seq_vecs[i,3,j] == 1:
                 seq_list[j] = 'T'
-            else:
+            elif seq_vecs[i,:,j].sum() == 1:
                 seq_list[j] = 'N'
+            else:
+                print >> sys.stderr, 'Malformed position vector: ', seq_vecs[i,:,j]
         seqs.append(''.join(seq_list))
     return seqs
