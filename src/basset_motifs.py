@@ -120,6 +120,9 @@ def main():
         # plot filter parameters as a heatmap
         plot_filter_heat(filter_weights[f,:,:], '%s/filter%d_heat.pdf' % (options.out_dir,f))
 
+        # write possum motif file
+        filter_possum(filter_weights[f,:,:], 'filter%d'%f, '%s/filter%d_possum.txt'%(options.out_dir,f), options.trim_filters)
+
         # plot weblogo of high scoring outputs
         plot_filter_logo(filter_outs[:,f,:], filter_size, seqs, '%s/filter%d_logo'%(options.out_dir,f), maxpct_t=0.5)
 
@@ -205,9 +208,12 @@ def get_motif_proteins(meme_db_file):
     return motif_protein
 
 
-def info_content(pwm):
+def info_content(pwm, transpose=False):
     ''' Compute PWM information content '''
     pseudoc = 1e-9
+
+    if transpose:
+        pwm = np.transpose(pwm)
 
     ic = 0
     for i in range(pwm.shape[0]):
@@ -530,6 +536,43 @@ def filter_motif(param_matrix):
             motif_list.append('N')
 
     return ''.join(motif_list)
+
+
+################################################################################
+# filter_possum
+#
+# Write a Possum-style motif
+#
+# Input
+#  param_matrix: np.array of the filter's parameter matrix
+#  out_pdf:
+################################################################################
+def filter_possum(param_matrix, motif_id, possum_file, trim_filters=False, mult=200):
+    # possible trim
+    trim_start = 0
+    trim_end = param_matrix.shape[1]-1
+    trim_t = 0.3
+    if trim_filters:
+        # trim PWM of uninformative prefix
+        while np.max(param_matrix[:,trim_start]) - np.min(param_matrix[:,trim_start]) < trim_t:
+            trim_start += 1
+
+        # trim PWM of uninformative suffix
+        while np.max(param_matrix[:,trim_end]) - np.min(param_matrix[:,trim_end]) < trim_t:
+            trim_end -= 1
+
+    possum_out = open(possum_file, 'w')
+    print >> possum_out, 'BEGIN GROUP'
+    print >> possum_out, 'BEGIN FLOAT'
+    print >> possum_out, 'ID %s' % motif_id
+    print >> possum_out, 'AP DNA'
+    print >> possum_out, 'LE %d' % (trim_end+1-trim_start)
+    for ci in range(trim_start,trim_end+1):
+        print >> possum_out, 'MA %s' % ' '.join(['%.2f'%(mult*n) for n in param_matrix[:,ci]])
+    print >> possum_out, 'END'
+    print >> possum_out, 'END'
+
+    possum_out.close()
 
 
 ################################################################################
