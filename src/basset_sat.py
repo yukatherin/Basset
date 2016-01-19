@@ -28,8 +28,10 @@ def main():
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5 [Default: %default]')
     parser.add_option('-g', dest='gain_height', default=False, action='store_true', help='Nucleotide heights determined by the max of loss and gain [Default: %default]')
     parser.add_option('-m', dest='min_limit', default=0.1, type='float', help='Minimum heatmap limit [Default: %default]')
-    parser.add_option('-n', dest='center_nt', default=200, type='int', help='Center nt to mutate and plot in the heat map [Default: %default]')
+    parser.add_option('-n', dest='center_nt', default=0, type='int', help='Center nt to mutate and plot in the heat map [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='heat', help='Output directory [Default: %default]')
+    parser.add_option('-p', dest='print_table_all', default=False, action='store_true', help='Print all targets to the table [Default: %default]')
+    parser.add_option('-r', dest='rng_seed', default=1, type='float', help='Random number generator seed [Default: %default]')
     parser.add_option('-s', dest='sample', default=None, type='int', help='Sample sequences from the test set [Default:%default]')
     parser.add_option('-t', dest='targets', default='0', help='Comma-separated list of target indexes to plot (or -1 for all) [Default: %default]')
     (options,args) = parser.parse_args()
@@ -42,6 +44,8 @@ def main():
 
     if not os.path.isdir(options.out_dir):
         os.mkdir(options.out_dir)
+
+    random.seed(options.rng_seed)
 
     #################################################################
     # parse input file
@@ -123,7 +127,6 @@ def main():
 
             # convert to ACGT sequences
             seqs = dna_io.vecs2dna(seqs_1hot)
-
 
         except IOError:
             parser.error('Could not parse input file as FASTA or HDF5.')
@@ -240,7 +243,11 @@ def main():
         #################################################################
         # print table of nt variability for each cell
         #################################################################
-        for ci in range(seq_mod_preds.shape[3]):
+        print_targets = plot_targets
+        if options.print_table_all:
+            print_targets = range(seq_mod_preds.shape[3])
+
+        for ci in print_targets:
             seq_mod_preds_cell = seq_mod_preds[si,:,:,ci]
             real_pred_cell = get_real_pred(seq_mod_preds_cell, seq)
 
