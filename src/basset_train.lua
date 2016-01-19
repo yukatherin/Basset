@@ -57,12 +57,12 @@ local job = {}
 local scientist = nil
 if opt.job == '' then
     print("Hyper-parameters unspecified. Applying a small model architecture")
-    job.conv_filters = {100,75,100}
-    job.conv_filter_sizes = {19,11,7}
-    job.pool_width = {3,4,4}
+    job.conv_filters = {300,300,500}
+    job.conv_filter_sizes = {21,6,4}
+    job.pool_width = {4,4,4}
 
-    job.hidden_units = {500,500}
-    job.hidden_dropouts = {0.5,0.5}
+    job.hidden_units = {800}
+    job.hidden_dropouts = {0.5}
 else
     local job_in = io.open(opt.job, 'r')
     local line = job_in:read()
