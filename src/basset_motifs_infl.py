@@ -27,6 +27,7 @@ def main():
     usage = 'usage: %prog [options] <model_file> <test_hdf5_file>'
     parser = OptionParser(usage)
     parser.add_option('-b', dest='batch_size', default=1000, type='int', help='Batch size (affects memory usage) [Default: %default]')
+    parser.add_option('-c', dest='color_filters', default=False, action='store_true', help='Color filters by annotation in the scatter plot [Default: %default]')
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5.')
     parser.add_option('-i', dest='informative_only', default=False, action='store_true', help='Plot informative filters only [Default: %default]')
     parser.add_option('-m', dest='motifs_file')
@@ -70,7 +71,6 @@ def main():
     df_motifs = None
     if options.motifs_file:
         df_motifs = pd.read_table(options.motifs_file, delim_whitespace=True)
-
 
     #################################################################
     # sample
@@ -183,8 +183,18 @@ def main():
         nonzero = np.array(df_motifs.ic > 0)
         xmin, xmax = coord_range(df_motifs.ic.loc[nonzero])
         plt.figure()
-        g = sns.jointplot(x=np.array(df_motifs.ic.loc[nonzero]), y=filter_infl[nonzero], color='black', stat_func=None, joint_kws={'alpha':0.8})
-        ax = g.ax_joint
+
+        if not options.color_filters:
+            g = sns.jointplot(x=np.array(df_motifs.ic.loc[nonzero]), y=filter_infl[nonzero], color='black', stat_func=None, joint_kws={'alpha':0.8})
+        else:
+            g = sns.jointplot(x=np.array(df_motifs.ic.loc[nonzero]), y=filter_infl[nonzero], color='black', stat_func=None, joint_kws={'alpha':0.1})
+
+            ax = g.ax_joint
+            unannotated = np.logical_and(nonzero, np.array(df_motifs.annotation == '.'))
+            ax.scatter(np.array(df_motifs.ic.loc[unannotated]), filter_infl[unannotated], c='#ee8b00', alpha=0.5, linewidths=0)
+            annotated = np.array(df_motifs.annotation != '.')
+            ax.scatter(np.array(df_motifs.ic.loc[annotated]), filter_infl[annotated], c='#1ba100', alpha=0.5, linewidths=0)
+
         ax.set_xlim(xmin, xmax)
         ax.set_xlabel('Information content')
         ax.xaxis.label.set_fontsize(18)
@@ -193,6 +203,7 @@ def main():
         ax.set_ylabel('Influence')
         ax.yaxis.label.set_fontsize(18)
         map(lambda yl: yl.set_fontsize(15), ax.get_yticklabels())
+
         # ax.grid(True, linestyle=':')
         plt.tight_layout(w_pad=0, h_pad=0)
         plt.savefig('%s/ic_infl.pdf' % options.out_dir)
