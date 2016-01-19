@@ -9,6 +9,7 @@
   - cunn
   - lfs
   - [hdf5](https://github.com/deepmind/torch-hdf5)
+  - [dp](https://github.com/nicholas-leonard/dp)
   - [dpnn](https://github.com/nicholas-leonard/dpnn)
   - [inn](https://github.com/szagoruyko/imagine-nn)
 - Python

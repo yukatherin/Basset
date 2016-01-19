@@ -41,6 +41,10 @@ def main():
     cmd = 'luarocks install inn'
     subprocess.call(cmd, shell=True)
 
+    # install dp
+    cmd = 'luarocks install dp'
+    subprocess.call(cmd, shell=True)
+
 
     ############################################################
     # luarocks from github
