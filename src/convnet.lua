@@ -262,6 +262,22 @@ end
 
 
 ----------------------------------------------------------------
+-- cuda
+--
+-- Move the model to the GPU. Untested.
+----------------------------------------------------------------
+function ConvNet:cuda()
+    self.optim_state.m = self.optim_state.m:cuda()
+    self.optim_state.tmp = self.optim_state.tmp:cuda()
+    self.criterion:cuda()
+    self.model:cuda()
+    self.parameters, self.gradParameters = self.model:getParameters()
+    -- self.parameters = self.parameters:double()
+    -- self.gradParameters = self.gradParameters:double()
+    cuda = true
+end
+
+----------------------------------------------------------------
 -- decuda
 --
 -- Move the model back to the CPU.
@@ -321,8 +337,15 @@ function ConvNet:predict(Xf, batch_size, Xtens)
         batcher = Batcher:__init(Xf, nil, bs)
     end
 
+    -- find final model layer
+    local final_i = #self.model.modules - 1
+    if self.target_type == "continuous" then
+        final_i = final_i + 1
+    end
+
     -- track predictions across batches
     local preds = torch.Tensor(batcher.num_seqs, self.num_targets)
+    local scores = torch.Tensor(batcher.num_seqs, self.num_targets)
     local pi = 1
 
     -- get first batch
@@ -337,10 +360,12 @@ function ConvNet:predict(Xf, batch_size, Xtens)
 
         -- predict
         local preds_batch = self.model:forward(Xb)
+        local scores_batch = self.model.modules[final_i].output
 
         -- copy into larger Tensor
         for i = 1,(#preds_batch)[1] do
             preds[{pi,{}}] = preds_batch[{i,{}}]:float()
+            scores[{pi,{}}] = scores_batch[{i,{}}]:float()
             pi = pi + 1
         end
 
@@ -350,16 +375,15 @@ function ConvNet:predict(Xf, batch_size, Xtens)
         collectgarbage()
     end
 
-    return preds
+    return preds, scores
 end
 
-
 ----------------------------------------------------------------
--- predict_scores
+-- predict_repr
 --
--- Predict pre-sigmoid scores for a new set of sequences.
+-- Predict representations for a new set of sequences.
 ----------------------------------------------------------------
-function ConvNet:predict_scores(Xf, batch_size, Xtens)
+function ConvNet:predict_repr(Xf, batch_size, Xtens)
     local bs = batch_size or self.batch_size
     local batcher
     if Xtens then
@@ -375,8 +399,13 @@ function ConvNet:predict_scores(Xf, batch_size, Xtens)
     end
 
     -- track predictions across batches
+    local preds = torch.Tensor(batcher.num_seqs, self.num_targets)
     local scores = torch.Tensor(batcher.num_seqs, self.num_targets)
-    local si = 1
+    local reprs = {}
+    local init_reprs = true
+    local nl_modules = self.model:findModules('nn.ReLU')
+
+    local bi = 1
 
     -- get first batch
     local Xb = batcher:next()
@@ -389,22 +418,58 @@ function ConvNet:predict_scores(Xf, batch_size, Xtens)
         end
 
         -- predict
-        self.model:forward(Xb)
-        scores_batch = self.model.modules[final_i].output
+        local preds_batch = self.model:forward(Xb)
+        local scores_batch = self.model.modules[final_i].output
 
-        -- copy into larger Tensor
-        for i = 1,(#scores_batch)[1] do
-            scores[{si,{}}] = scores_batch[{i,{}}]:float()
-            si = si + 1
+        -- copy into larger tensor
+        local pi = bi
+        for i = 1,(#preds_batch)[1] do
+            preds[{pi,{}}] = preds_batch[{i,{}}]:float()
+            scores[{pi,{}}] = scores_batch[{i,{}}]:float()
+            pi = pi + 1
         end
+
+        for l = 1,#nl_modules do
+            -- get batch repr
+            local reprs_batch = nl_modules[l].output
+
+            -- initialize reprs
+            if init_reprs then
+                if reprs_batch:nDimension() == 2 then
+                    -- fully connected
+                    reprs[l] = torch.Tensor(batcher.num_seqs, (#reprs_batch)[2], 1)
+                else
+                    -- convolution
+                    reprs[l] = torch.Tensor(batcher.num_seqs, (#reprs_batch)[2], (#reprs_batch)[4])
+                end
+            end
+
+            -- copy into larger tensor
+            local pi = bi
+            for i = 1,(#reprs_batch)[1] do
+                if reprs_batch:nDimension() == 2 then
+                    -- fully connected
+                    reprs[l][{pi,{}, 1}] = reprs_batch[{i,{}}]:float()
+                else
+                    -- convolution
+                    reprs[l][{pi,{},{}}] = reprs_batch[{i,{},{}}]:float():squeeze()
+                end
+
+                pi = pi + 1
+            end
+        end
+
+        -- reprs initialized
+        init_reprs = false
 
         -- next batch
         Xb = batcher:next()
+        bi = bi + (#preds_batch)[1]
 
         collectgarbage()
     end
 
-    return scores
+    return preds, scores, reprs
 end
 
 
@@ -439,10 +504,8 @@ function ConvNet:sanitize()
 end
 
 ----------------------------------------------------------------
--- sanitize
+-- setStructureParams
 --
--- Clear the intermediate states in the model before
--- saving to disk.
 ----------------------------------------------------------------
 function ConvNet:setStructureParams(job)
     ---------------------------------------------
