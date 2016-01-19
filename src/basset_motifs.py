@@ -33,6 +33,7 @@ weblogo_opts += ' -C "#0C8040" T T'
 def main():
     usage = 'usage: %prog [options] <model_file> <test_hdf5_file>'
     parser = OptionParser(usage)
+    parser.add_option('-a', dest='act_t', default=0.5, type='float', help='Activation threshold (as proportion of max) to consider for PWM [Default: %default]')
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5.')
     parser.add_option('-o', dest='out_dir', default='.')
     parser.add_option('-m', dest='meme_db', default='%s/data/motifs/Homo_sapiens.meme' % os.environ['BASSETDIR'], help='MEME database used to annotate motifs')
@@ -124,7 +125,7 @@ def main():
         filter_possum(filter_weights[f,:,:], 'filter%d'%f, '%s/filter%d_possum.txt'%(options.out_dir,f), options.trim_filters)
 
         # plot weblogo of high scoring outputs
-        plot_filter_logo(filter_outs[:,f,:], filter_size, seqs, '%s/filter%d_logo'%(options.out_dir,f), maxpct_t=0.5)
+        plot_filter_logo(filter_outs[:,f,:], filter_size, seqs, '%s/filter%d_logo'%(options.out_dir,f), maxpct_t=options.act_t)
 
         # make a PWM for the filter
         filter_pwm, nsites = make_filter_pwm('%s/filter%d_logo.fa'%(options.out_dir,f))
