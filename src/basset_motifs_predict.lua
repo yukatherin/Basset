@@ -4,7 +4,6 @@ require 'hdf5'
 
 require 'batcher'
 require 'convnet_io'
-require 'convnet'
 
 ----------------------------------------------------------------
 -- parse arguments
@@ -18,10 +17,13 @@ cmd:argument('model_file')
 cmd:argument('data_file')
 cmd:argument('out_file')
 cmd:text()
+cmd:option('-cuda', false, 'Run on GPGPU')
+cmd:text()
 opt = cmd:parse(arg)
 
--- fix seed
-torch.manualSeed(1)
+-- set cpu/gpu
+cuda = opt.cuda
+require 'convnet'
 
 ----------------------------------------------------------------
 -- load data
