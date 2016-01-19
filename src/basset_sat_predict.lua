@@ -2,7 +2,6 @@
 
 require 'hdf5'
 
-require 'convnet'
 require 'convnet_io'
 require 'postprocess'
 
@@ -19,13 +18,18 @@ cmd:argument('data_file')
 cmd:argument('out_file')
 cmd:text()
 cmd:text('Options:')
+cmd:option('-batch_size', 300, 'Maximum batch size')
 cmd:option('-center_nt', 0, 'Mutate only the center nucleotides')
+cmd:option('-cuda', false, 'Run on GPGPU')
 cmd:option('-pre_sigmoid', false, 'Measure changes pre-sigmoid')
 cmd:option('-raw_prob', false, 'Measure raw probabilities')
 opt = cmd:parse(arg)
 
 -- fix seed
 torch.manualSeed(1)
+
+cuda = opt.cuda
+require 'convnet'
 
 ----------------------------------------------------------------
 -- load data
@@ -51,7 +55,7 @@ local fl = #convnet.model.modules - 1
 ----------------------------------------------------------------
 -- predict seqs
 convnet.model:evaluate()
-local preds = convnet:predict(test_seqs, num_seqs)
+local preds, prepreds = convnet:predict(test_seqs, opt.batch_size)
 local num_targets = (#preds)[2]
 
 -- normalize predictions
@@ -62,7 +66,6 @@ if convnet.target_type == "binary" and not opt.raw_prob then
 end
 
 -- compute pre-sigmoid distribution stats
-local prepreds = convnet.model.modules[fl].output:clone()
 local prepreds_means = prepreds:mean(1):squeeze()
 local prepreds_stds = prepreds:std(1):squeeze()
 
@@ -106,8 +109,7 @@ for si=1,num_seqs do
 	end
 
 	-- predict modified sequences
-	local mod_preds = convnet:predict(seq_mods, num_mods, true)
-    local mod_prepreds = convnet.model.modules[fl].output:clone()
+	local mod_preds, mod_prepreds = convnet:predict(seq_mods, opt.batch_size, true)
 
     -- normalize predictions
     if convnet.target_type == "binary" and not opt.raw_prob then
