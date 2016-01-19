@@ -50,7 +50,7 @@ convnet:load(convnet_params)
 convnet.model:evaluate()
 
 -- measure accuracy on a test set
-local preds = convnet:predict(test_seqs, opt.batch_size)
+local preds = convnet:predict(test_seqs, opt.batch)
 
 if opt.norm then
     -- TEMP! TMP!
