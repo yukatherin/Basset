@@ -86,7 +86,9 @@ def main():
     #################################################################
     # collect and print SADs
     #################################################################
-    if options.targets_file is not None:
+    if options.targets_file is None:
+        target_labels = ['t%d' % ti for ti in range(seq_preds.shape[1])]
+    else:
         target_labels = [line.split()[0] for line in open(options.targets_file)]
 
     sad_out = open('%s/sad_table.txt' % options.out_dir, 'w')
