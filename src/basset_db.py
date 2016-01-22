@@ -25,7 +25,7 @@ def main():
     parser = OptionParser(usage)
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5.')
     parser.add_option('-o', dest='out_dir', default='.')
-    parser.add_option('-s', dest='sample', default=128, type='int', help='Sequences to sample [Default: %default]')
+    parser.add_option('-s', dest='sample', default=256, type='int', help='Sequences to sample [Default: %default]')
     parser.add_option('-t', dest='targets_file', default=None, help='File labelings targets in the second column [Default: %default]')
     (options,args) = parser.parse_args()
 
