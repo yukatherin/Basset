@@ -63,6 +63,10 @@ def main():
             else:
                 seqs[-1] += line.rstrip()
 
+        # convert to arrays
+        seqs = np.array(seqs)
+        seq_headers = np.array(seq_headers)
+
         model_input_hdf5 = '%s/model_in.h5'%options.out_dir
 
         if options.input_activity_file:
@@ -83,6 +87,7 @@ def main():
             sample_i = np.array(random.sample(xrange(seqs_1hot.shape[0]), options.sample))
             seqs_1hot = seqs_1hot[sample_i]
             seq_headers = seq_headers[sample_i]
+            seqs = seqs[sample_i]
             if targets is not None:
                 targets = targets[sample_i]
 
@@ -194,15 +199,11 @@ def main():
             # prepare figure
             sns.set(style='white', font_scale=0.5)
             sns.axes_style({'axes.linewidth':1})
-            heat_cols = 400
-            sad_start = 1
-            sad_end = 323
-            logo_start = 0
-            logo_end = 324
+            spp = subplot_params(seq_mod_preds_cell.shape[1])
             fig = plt.figure(figsize=(20,3))
-            ax_logo = plt.subplot2grid((3,heat_cols), (0,logo_start), colspan=(logo_end-logo_start))
-            ax_sad = plt.subplot2grid((3,heat_cols), (1,sad_start), colspan=(sad_end-sad_start))
-            ax_heat = plt.subplot2grid((3,heat_cols), (2,0), colspan=heat_cols)
+            ax_logo = plt.subplot2grid((3,spp['heat_cols']), (0,spp['logo_start']), colspan=(spp['logo_end']-spp['logo_start']))
+            ax_sad = plt.subplot2grid((3,spp['heat_cols']), (1,spp['sad_start']), colspan=(spp['sad_end']-spp['sad_start']))
+            ax_heat = plt.subplot2grid((3,spp['heat_cols']), (2,0), colspan=spp['heat_cols'])
 
             # print a WebLogo of the sequence
             vlim = max(options.min_limit, abs(minmax_matrix).max())
@@ -293,6 +294,22 @@ def get_real_pred(seq_mod_preds, seq):
 
     return real_pred
 
+def subplot_params(seq_len):
+    ''' Specify subplot layout parameters for various sequence lengths. '''
+    if seq_len < 500:
+        spp = {'heat_cols': 400,
+                'sad_start': 1,
+                'sad_end': 323,
+                'logo_start': 0,
+                'logo_end': 324}
+    else:
+        spp = {'heat_cols': 400,
+                'sad_start': 1,
+                'sad_end': 321,
+                'logo_start': 0,
+                'logo_end': 322}
+
+    return spp
 
 ################################################################################
 # __main__
