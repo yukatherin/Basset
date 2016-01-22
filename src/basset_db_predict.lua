@@ -51,7 +51,6 @@ local num_motifs = 0
 for mid, _ in pairs(motifs) do
     num_motifs = num_motifs + 1
 end
-print(motifs[tostring(num_motifs-1)])
 
 ----------------------------------------------------------------
 -- predict
@@ -83,9 +82,8 @@ for l = 1,#reprs do
     end
 end
 
--- TEMP
+-- for each motif
 for mi = 1,num_motifs do
--- for mi = 1,10 do
     print(mi)
 
     -- copy the test seqs
@@ -98,7 +96,7 @@ for mi = 1,num_motifs do
         -- sample a motif sequence
         for pi = 1,(#motif)[2] do
             -- choose a random nt
-            local r = torch.uniform()
+            local r = torch.uniform() - 0.0001
             local nt = 1
             local psum = motif[nt][pi]
             while psum < r do
