@@ -21,8 +21,8 @@ cmd:text('Options:')
 cmd:option('-batch_size', 300, 'Maximum batch size')
 cmd:option('-center_nt', 0, 'Mutate only the center nucleotides')
 cmd:option('-cuda', false, 'Run on GPGPU')
+cmd:option('-norm', false, 'Normalize target predictions')
 cmd:option('-pre_sigmoid', false, 'Measure changes pre-sigmoid')
-cmd:option('-raw_prob', false, 'Measure raw probabilities')
 opt = cmd:parse(arg)
 
 -- fix seed
@@ -60,14 +60,16 @@ local num_targets = (#preds)[2]
 
 -- normalize predictions
 local preds_means
-if convnet.target_type == "binary" and not opt.raw_prob then
+local prepreds_means
+local prepreds_stds
+if opt.norm then
     preds_means = preds:mean(1):squeeze()
     preds = troy_norm(preds, preds_means)
-end
 
--- compute pre-sigmoid distribution stats
-local prepreds_means = prepreds:mean(1):squeeze()
-local prepreds_stds = prepreds:std(1):squeeze()
+    prepreds_means = prepreds:mean(1):squeeze()
+    prepreds_stds = prepreds:std(1):squeeze()
+    prepreds = (prepreds - prepreds_means:repeatTensor(num_seqs,1)):cdiv(prepreds_stds:repeatTensor(num_seqs,1))
+end
 
 -- determine where modifications should begin and end
 local delta_len = seq_len
@@ -112,8 +114,9 @@ for si=1,num_seqs do
 	local mod_preds, mod_prepreds = convnet:predict(seq_mods, opt.batch_size, true)
 
     -- normalize predictions
-    if convnet.target_type == "binary" and not opt.raw_prob then
+    if opt.norm then
         mod_preds = troy_norm(mod_preds, preds_means)
+        mod_prepreds = (mod_prepreds - prepreds_means:repeatTensor(num_mods,1)):cdiv(prepreds_stds:repeatTensor(num_mods,1))
     end
 
 	-- copy into the full matrix
@@ -126,7 +129,7 @@ for si=1,num_seqs do
 			if nts[ni] == seq_nt then
 				for ti=1,num_targets do
                     if opt.pre_sigmoid then
-                        seq_mod_preds[{si,ni,pi,ti}] = (prepreds[{si,ti}] - prepreds_means[ti]) / prepreds_stds[ti]
+                        seq_mod_preds[{si,ni,pi,ti}] = prepreds[{si,ti}]
                     else
                         seq_mod_preds[{si,ni,pi,ti}] = preds[{si,ti}]
                     end
@@ -134,7 +137,7 @@ for si=1,num_seqs do
 			else
 				for ti=1,num_targets do
 					if opt.pre_sigmoid then
-                        seq_mod_preds[{si,ni,pi,ti}] = (mod_prepreds[{mi,ti}] - prepreds_means[ti]) / prepreds_stds[ti]
+                        seq_mod_preds[{si,ni,pi,ti}] = mod_prepreds[{mi,ti}]
                     else
                         seq_mod_preds[{si,ni,pi,ti}] = mod_preds[{mi,ti}]
                     end
