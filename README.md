@@ -32,6 +32,8 @@ To download and install the remaining dependencies, run
     ./install_dependencies.py
 ```
 
+Alternatively, Dr. Lee Zamparo generously [volunteered his Docker image](https://hub.docker.com/r/lzamparo/basset/).
+
 To download and install additional useful data, like my best pre-trained model and public datasets, run
 ```
     ./install_data.py
