@@ -153,8 +153,10 @@ def dna_one_hot(seq, seq_len=None, flatten=True):
             try:
                 seq_code[int(seq[i-seq_start]),i] = 1
             except:
-                # print >> sys.stderr, 'Non-ACGT nucleotide encountered'
-                seq_code[:,i] = 0.25
+                # this fails with dype='int8'
+                # change to 'float16' and test it
+                # seq_code[:,i] = 0.25
+                pass
 
     # flatten and make a column vector 1 x len(seq)
     if flatten:
@@ -373,6 +375,7 @@ def one_hot_get(seq_vec, pos):
 ################################################################################
 # one_hot_set
 #
+# Assuming the sequence is given as 4x1xLENGTH
 # Input
 #  seq_vec:
 #  pos:
@@ -381,6 +384,35 @@ def one_hot_get(seq_vec, pos):
 # Output
 ################################################################################
 def one_hot_set(seq_vec, pos, nt):
+    # zero all
+    for ni in range(4):
+        seq_vec[ni,0,pos] = 0
+
+    # set the nt
+    if nt == 'A':
+        seq_vec[0,0,pos] = 1
+    elif nt == 'C':
+        seq_vec[1,0,pos] = 1
+    elif nt == 'G':
+        seq_vec[2,0,pos] = 1
+    elif nt == 'T':
+        seq_vec[3,0,pos] = 1
+    else:
+        for ni in range(4):
+            seq_vec[ni,0,pos] = 0.25
+
+
+################################################################################
+# one_hot_set_1d
+#
+# Input
+#  seq_vec:
+#  pos:
+#  nt
+#
+# Output
+################################################################################
+def one_hot_set_1d(seq_vec, pos, nt):
     seq_len = len(seq_vec)/4
 
     a0 = 0
@@ -418,6 +450,7 @@ def vecs2dna(seq_vecs):
     Output:
         seqs
     '''
+
     # possibly reshape
     if len(seq_vecs.shape) == 2:
         seq_vecs = np.reshape(seq_vecs, (seq_vecs.shape[0], 4, -1))
@@ -439,6 +472,6 @@ def vecs2dna(seq_vecs):
             elif seq_vecs[i,:,j].sum() == 1:
                 seq_list[j] = 'N'
             else:
-                print >> sys.stderr, 'Malformed position vector: ', seq_vecs[i,:,j]
+                print >> sys.stderr, 'Malformed position vector: ', seq_vecs[i,:,j], 'for sequence %d position %d' % (i,j)
         seqs.append(''.join(seq_list))
     return seqs
