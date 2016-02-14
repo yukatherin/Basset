@@ -300,10 +300,42 @@ end
 -- Return the module representing nonlinearity x.
 ----------------------------------------------------------------
 function ConvNet:get_nonlinearity(x)
-    nl_modules = self.model:findModules('nn.ReLU')
+    local nl_modules = self.model:findModules('nn.ReLU')
     return nl_modules[x]
 end
 
+function ConvNet:get_nonlinears(pool)
+    local nl_modules = {}
+    local ni = 1
+    local mi = 1
+    local conv_name
+    if pool then
+        conv_name = 'nn.SpatialMaxPooling'
+    else
+        conv_name = 'nn.ReLU'
+    end
+
+    -- add convolutions
+    for c = 1,self.conv_layers do
+        while torch.typename(self.model.modules[mi]) ~= conv_name do
+            mi = mi + 1
+        end
+        nl_modules[ni] = self.model.modules[mi]
+        ni = ni + 1
+        mi = mi + 1
+    end
+
+    -- add fully connected
+    while mi <= #(self.model.modules) do
+        if torch.typename(self.model.modules[mi]) == 'nn.ReLU' then
+            nl_modules[ni] = self.model.modules[mi]
+            ni = ni + 1
+        end
+        mi = mi + 1
+    end
+
+    return nl_modules
+end
 
 ----------------------------------------------------------------
 -- get_final
@@ -381,9 +413,11 @@ end
 ----------------------------------------------------------------
 -- predict_repr
 --
+-- Args:
+--  repr_layers
 -- Predict representations for a new set of sequences.
 ----------------------------------------------------------------
-function ConvNet:predict_repr(Xf, batch_size, Xtens)
+function ConvNet:predict_repr(Xf, batch_size, Xtens, pool, repr_layers)
     local bs = batch_size or self.batch_size
     local batcher
     if Xtens then
@@ -399,11 +433,14 @@ function ConvNet:predict_repr(Xf, batch_size, Xtens)
     end
 
     -- track predictions across batches
-    local preds = torch.Tensor(batcher.num_seqs, self.num_targets)
-    local scores = torch.Tensor(batcher.num_seqs, self.num_targets)
+    local preds = torch.FloatTensor(batcher.num_seqs, self.num_targets)
+    local scores = torch.FloatTensor(batcher.num_seqs, self.num_targets)
     local reprs = {}
     local init_reprs = true
-    local nl_modules = self.model:findModules('nn.ReLU')
+    local nl_modules = self:get_nonlinears(pool)
+    if repr_layers == nil then
+        repr_layers = #nl_modules
+    end
 
     local bi = 1
 
@@ -429,7 +466,7 @@ function ConvNet:predict_repr(Xf, batch_size, Xtens)
             pi = pi + 1
         end
 
-        for l = 1,#nl_modules do
+        for l = 1,repr_layers do
             -- get batch repr
             local reprs_batch = nl_modules[l].output
 
@@ -437,10 +474,10 @@ function ConvNet:predict_repr(Xf, batch_size, Xtens)
             if init_reprs then
                 if reprs_batch:nDimension() == 2 then
                     -- fully connected
-                    reprs[l] = torch.Tensor(batcher.num_seqs, (#reprs_batch)[2], 1)
+                    reprs[l] = torch.FloatTensor(batcher.num_seqs, (#reprs_batch)[2], 1)
                 else
                     -- convolution
-                    reprs[l] = torch.Tensor(batcher.num_seqs, (#reprs_batch)[2], (#reprs_batch)[4])
+                    reprs[l] = torch.FloatTensor(batcher.num_seqs, (#reprs_batch)[2], (#reprs_batch)[4])
                 end
             end
 
