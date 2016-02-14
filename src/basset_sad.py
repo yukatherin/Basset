@@ -23,6 +23,7 @@ import vcf
 def main():
     usage = 'usage: %prog [options] <model_th> <vcf_file>'
     parser = OptionParser(usage)
+    parser.add_option('-c', dest='csv', default=False, action='store_true', help='Print table as CSV [Default: %default]')
     parser.add_option('--cuda', dest='cuda', default=False, action='store_true', help='Predict on the GPU [Default: %default]')
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5 [Default: %default]')
     parser.add_option('-f', dest='genome_fasta', default='%s/data/genomes/hg19.fa'%os.environ['BASSETDIR'], help='Genome FASTA from which sequences will be drawn [Default: %default]')
@@ -89,12 +90,15 @@ def main():
     if options.targets_file is None:
         target_labels = ['t%d' % ti for ti in range(seq_preds.shape[1])]
     else:
-        target_labels = [line.split()[0] for line in open(options.targets_file)]
-
-    sad_out = open('%s/sad_table.txt' % options.out_dir, 'w')
+        target_labels = [line.split()[1] for line in open(options.targets_file)]
 
     header_cols = ('rsid', 'index', 'score', 'ref', 'alt', 'target', 'ref_pred', 'alt pred', 'sad')
-    print >> sad_out, ' '.join(header_cols)
+    if options.csv:
+        sad_out = open('%s/sad_table.csv' % options.out_dir, 'w')
+        print >> sad_out, ','.join(header_cols)
+    else:
+        sad_out = open('%s/sad_table.txt' % options.out_dir, 'w')
+        print >> sad_out, ' '.join(header_cols)
 
     # hash by index snp
     sad_matrices = {}
@@ -127,16 +131,29 @@ def main():
             for ti in range(len(alt_sad)):
                 if options.index_snp and options.score:
                     cols = (snp.rsid, snp.index_snp, snp.score, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
-                    print >> sad_out, '%-13s %-13s %5.3f %6s %6s %12s %6.4f %6.4f %7.4f' % cols
+                    if options.csv:
+                        print >> sad_out, ','.join([str(c) for c in cols])
+                    else:
+                        print >> sad_out, '%-13s %-13s %5.3f %6s %6s %12s %6.4f %6.4f %7.4f' % cols
+
                 elif options.index_snp:
                     cols = (snp.rsid, snp.index_snp, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
-                    print >> sad_out, '%-13s %-13s %6s %6s %12s %6.4f %6.4f %7.4f' % cols
+                    if options.csv:
+                        print >> sad_out, ','.join([str(c) for c in cols])
+                    else:
+                        print >> sad_out, '%-13s %-13s %6s %6s %12s %6.4f %6.4f %7.4f' % cols
                 elif options.score:
                     cols = (snp.rsid, snp.score, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
-                    print >> sad_out, '%-13s %5.3f %6s %6s %12s %6.4f %6.4f %7.4f' % cols
+                    if options.csv:
+                        print >> sad_out, ','.join([str(c) for c in cols])
+                    else:
+                        print >> sad_out, '%-13s %5.3f %6s %6s %12s %6.4f %6.4f %7.4f' % cols
                 else:
                     cols = (snp.rsid, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
-                    print >> sad_out, '%-13s %6s %6s %12s %6.4f %6.4f %7.4f' % cols
+                    if options.csv:
+                        print >> sad_out, ','.join([str(c) for c in cols])
+                    else:
+                        print >> sad_out, '%-13s %6s %6s %12s %6.4f %6.4f %7.4f' % cols
 
     sad_out.close()
 
