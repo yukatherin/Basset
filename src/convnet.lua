@@ -5,7 +5,7 @@ require 'optim'
 if cuda then
     require 'cunn'
     require 'cutorch'
-    require 'inn'
+    -- require 'inn'
 end
 
 require 'accuracy'
@@ -608,8 +608,22 @@ function ConvNet:setStructureParams(job)
         end
     end
 
+    -- or determine via scaling
+    if job.conv_layers and job.conv_size_scale then
+        for i=2,job.conv_layers do
+            self.conv_filter_sizes[i] = math.ceil(job.conv_size_scale * self.conv_filter_sizes[i-1])
+        end
+    end
+
     -- pooling widths
     self.pool_width = table_ext(job.pool_width, 1, self.conv_layers)
+
+    -- or determine via scaling
+    if job.conv_layers and job.pool_width_scale then
+        for i=2,job.conv_layers do
+            self.pool_width[i] = math.ceil(job.pool_width_scale * self.pool_width[i-1])
+        end
+    end
 
     -- pooling operation ("max", "stochastic")
     self.pool_op = job.pool_op or "max"
