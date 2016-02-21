@@ -16,6 +16,7 @@ cmd:argument('data_file')
 cmd:text()
 cmd:text('Options:')
 cmd:option('-cuda', false, 'Run on GPGPU')
+cmd:option('-cudnn', false, 'Run on GPGPU w/ cuDNN')
 cmd:option('-job', '', 'Table of job hyper-parameters')
 cmd:option('-max_epochs', 1000, 'Maximum training epochs to perform')
 cmd:option('-restart', '', 'Restart an interrupted training run')
@@ -31,7 +32,8 @@ opt = cmd:parse(arg)
 torch.manualSeed(opt.rand)
 
 -- set cpu/gpu
-cuda = opt.cuda
+cudnn = opt.cudnn
+cuda = opt.cuda or opt.cudnn
 require 'convnet'
 
 ----------------------------------------------------------------

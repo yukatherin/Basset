@@ -3,9 +3,16 @@ require 'nn'
 require 'optim'
 
 if cuda then
+    -- require 'inn'
+end
+
+if cuda then
     require 'cunn'
     require 'cutorch'
     -- require 'inn'
+end
+if cudnn then
+    require 'cudnn'
 end
 
 require 'accuracy'
@@ -232,6 +239,9 @@ function ConvNet:build(job, init_depth, init_len, num_targets)
     self.criterion.sizeAverage = false
 
     -- cuda
+    if cudnn then
+        self.model = cudnn.convert(self.model, cudnn)
+    end
     if cuda then
         print("Running on GPU.")
         self.model:cuda()
