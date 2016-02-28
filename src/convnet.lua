@@ -427,7 +427,7 @@ end
 --  repr_layers
 -- Predict representations for a new set of sequences.
 ----------------------------------------------------------------
-function ConvNet:predict_repr(Xf, batch_size, Xtens, pool, repr_layers)
+function ConvNet:predict_reprs(Xf, batch_size, Xtens, pool, repr_layers)
     local bs = batch_size or self.batch_size
     local batcher
     if Xtens then
