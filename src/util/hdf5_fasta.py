@@ -22,17 +22,14 @@ def main():
     (options,args) = parser.parse_args()
 
     if len(args) != 1:
-        parser.error('Must provide Basset model file and input sequences (as a FASTA file or test data in an HDF file')
+        parser.error('Must provide data HDF5 file')
     else:
         hdf5_file = args[0]
 
     # load 1 hot coded seqeunces from HDF5
     hdf5_in = h5py.File(hdf5_file, 'r')
     seqs_1hot = np.array(hdf5_in['%s_in' % options.set])
-    try:
-        seq_headers = np.array(hdf5_in['test_headers'])
-    except:
-        seq_headers = None
+    seq_headers = np.array(hdf5_in['test_headers'])
     hdf5_in.close()
 
     # convert to ACGT sequences
