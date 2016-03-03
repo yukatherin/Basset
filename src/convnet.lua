@@ -3,10 +3,6 @@ require 'nn'
 require 'optim'
 
 if cuda then
-    -- require 'inn'
-end
-
-if cuda then
     require 'cunn'
     require 'cutorch'
     -- require 'inn'
@@ -296,6 +292,9 @@ function ConvNet:decuda()
     self.optim_state.m = self.optim_state.m:double()
     self.optim_state.tmp = self.optim_state.tmp:double()
     self.criterion:double()
+    if cudnn then
+        cudnn.convert(self.model, nn)
+    end
     self.model:double()
     self.parameters, self.gradParameters = self.model:getParameters()
     -- self.parameters = self.parameters:double()
@@ -315,6 +314,11 @@ function ConvNet:get_nonlinearity(x)
 end
 
 function ConvNet:get_nonlinears(pool)
+    local relu_name = 'nn.ReLU'
+    if cudnn then
+        relu_name = 'cudnn.ReLU'
+    end
+
     local nl_modules = {}
     local ni = 1
     local mi = 1
@@ -322,7 +326,7 @@ function ConvNet:get_nonlinears(pool)
     if pool then
         conv_name = 'nn.SpatialMaxPooling'
     else
-        conv_name = 'nn.ReLU'
+        conv_name = relu_name
     end
 
     -- add convolutions
@@ -337,7 +341,7 @@ function ConvNet:get_nonlinears(pool)
 
     -- add fully connected
     while mi <= #(self.model.modules) do
-        if torch.typename(self.model.modules[mi]) == 'nn.ReLU' then
+        if torch.typename(self.model.modules[mi]) == relu_name then
             nl_modules[ni] = self.model.modules[mi]
             ni = ni + 1
         end
@@ -420,8 +424,75 @@ function ConvNet:predict(Xf, batch_size, Xtens)
     return preds, scores
 end
 
+
 ----------------------------------------------------------------
--- predict_repr
+-- predict_finalrep
+--
+-- Args:
+--
+-- Predict representations for a new set of sequences.
+----------------------------------------------------------------
+function ConvNet:predict_finalrepr(Xf, batch_size, Xtens)
+    local bs = batch_size or self.batch_size
+    local batcher
+    if Xtens then
+        batcher = BatcherT:__init(Xf, nil, bs)
+    else
+        batcher = Batcher:__init(Xf, nil, bs)
+    end
+
+    -- representation data structure
+    local init_repr = true
+    local repr
+
+    -- final modules
+    local nl_modules = self:get_nonlinears(pool)
+    local final_module = nl_modules[#nl_modules]
+
+    local bi = 1
+
+    -- get first batch
+    local Xb = batcher:next()
+
+    -- while batches remain
+    while Xb ~= nil do
+        -- cuda
+        if cuda then
+            Xb = Xb:cuda()
+        end
+
+        -- predict
+        self.model:forward(Xb)
+
+        -- get batch repr
+        local repr_batch = final_module.output
+
+        -- initialize reprs
+        if init_repr then
+            repr = torch.FloatTensor(batcher.num_seqs, (#repr_batch)[2])
+            init_repr = false
+        end
+
+        -- copy into larger tensor
+        local pi = bi
+        for i = 1,(#repr_batch)[1] do
+            repr[{pi,{}}] = repr_batch[{i,{}}]:float()
+            pi = pi + 1
+        end
+
+        -- next batch
+        Xb = batcher:next()
+        bi = bi + (#repr_batch)[1]
+
+        collectgarbage()
+    end
+
+    return repr
+end
+
+
+----------------------------------------------------------------
+-- predict_reprs
 --
 -- Args:
 --  repr_layers
@@ -449,7 +520,10 @@ function ConvNet:predict_reprs(Xf, batch_size, Xtens, pool, repr_layers)
     local init_reprs = true
     local nl_modules = self:get_nonlinears(pool)
     if repr_layers == nil then
-        repr_layers = #nl_modules
+        repr_layers = {}
+        for li=1,#nl_modules do
+            repr_layers[li] = li
+        end
     end
 
     local bi = 1
@@ -476,7 +550,7 @@ function ConvNet:predict_reprs(Xf, batch_size, Xtens, pool, repr_layers)
             pi = pi + 1
         end
 
-        for l = 1,repr_layers do
+        for li,l in ipairs(repr_layers) do
             -- get batch repr
             local reprs_batch = nl_modules[l].output
 
