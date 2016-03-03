@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 from optparse import OptionParser
+import re
 import h5py
-
-import numpy as np
-
-import dna_io
 
 ################################################################################
 # hdf5_test_bed.py
@@ -26,16 +23,18 @@ def main():
     else:
         hdf5_file = args[0]
 
-    # get headers
-    hdf5_in = h5py.File(hdf5_file, 'r')
-    seq_headers = np.array(hdf5_in['test_headers'])
-    hdf5_in.close()
+    bed_re = re.compile('(chr\w+):(\d+)-(\d+)\([+-]\)')
 
-    for si, header in enumerate(seq_headers):
-        chrom = header[:header.find(':')]
-        start = int(header[header.find(':')+1:header.find('-')])
-        end = int(header[header.find('-')+1:])
-        print '%s\t%d\%d' % (chrom,start,end)
+    hdf5_in = h5py.File(hdf5_file, 'r')
+
+    for header in hdf5_in['test_headers']:
+        bed_m = bed_re.search(header)
+        chrom = bed_m.group(1)
+        start = int(bed_m.group(2))
+        end = int(bed_m.group(3))
+        print '%s\t%d\t%d' % (chrom,start,end)
+
+    hdf5_in.close()
 
 
 ################################################################################
