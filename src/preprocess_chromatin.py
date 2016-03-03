@@ -2,6 +2,7 @@
 from optparse import OptionParser
 from collections import OrderedDict
 import subprocess
+import sys
 
 import numpy as np
 
@@ -19,6 +20,7 @@ def main():
     usage = 'usage: %prog [options] <sites_bed> <sample_wigs_file> <out_file>'
     parser = OptionParser(usage)
     parser.add_option('-b', dest='bin_size', default=None, type='int', help='Bin size to take the mean track value [Default: %default]')
+    parser.add_option('-f', dest='function', default='mean', help='Function to compute in each bin [Default: %default]')
     parser.add_option('-n', dest='normalize', default=False, action='store_true', help='Normalize ')
     parser.add_option('-s', dest='span', default=200, type='int', help='Span of sequence to consider around each site Default: %default]')
     (options,args) = parser.parse_args()
@@ -85,8 +87,8 @@ def main():
 
         si = 0
         for line in p.stdout:
-            # zero nan's
-            line = line.replace('NA', '0')
+            # fix nan's
+            line = line.replace('NA', 'nan')
 
             # convert to floats
             span_values = np.array([float(v) for v in line.split()])
@@ -94,12 +96,18 @@ def main():
             # reshape into bins
             bin_values = span_values.reshape((num_bins,-1))
 
-            # take means in bins
-            bin_means = np.nanmean(bin_values, axis=1)
+            # compute function in bins
+            if options.function == 'max':
+                bin_sum = np.nanmax(bin_values, axis=1)
+            elif options.function == 'mean':
+                bin_sum = np.nanmean(bin_values, axis=1, dtype='float64').astype('float16')
+            else:
+                print >> sys.stderr, 'Unrecognized function %s' % options.function
+                exit()
 
             # copy into primary data structure
             for bi in range(num_bins):
-                site_features[si][wi+bi] = bin_means[bi]
+                site_features[si][wi+bi] = bin_sum[bi]
 
             si += 1
 
