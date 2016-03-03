@@ -17,6 +17,7 @@ cmd:argument('model_file')
 cmd:argument('data_file')
 cmd:argument('out_file')
 cmd:text()
+cmd:option('-batch', 128, 'Batch size')
 cmd:option('-cuda', false, 'Run on GPGPU')
 cmd:text()
 opt = cmd:parse(arg)
@@ -45,20 +46,17 @@ local num_seqs = test_seqs:dataspaceSize()[1]
 ----------------------------------------------------------------
 -- predict
 ----------------------------------------------------------------
--- predict seqs
+-- predict seqs and get first layer representation
 convnet.model:evaluate()
-convnet:predict(test_seqs, num_seqs)
+local preds, scores, reprs = convnet:predict_reprs(test_seqs, opt.batch_size, false, false, {1})
 
 -- get convolution filter params
 local filter_weights = convnet.model.modules[1].weight:squeeze()
 
--- get convolution filter outputs
-local filter_outs = convnet:get_nonlinearity(1).output:squeeze()
-
 -- dump to file, load into python.
 local hdf_out = hdf5.open(opt.out_file, 'w')
 hdf_out:write('weights', filter_weights)
-hdf_out:write('outs', filter_outs)
+hdf_out:write('outs', reprs[1])
 hdf_out:close()
 
 data_open:close()
