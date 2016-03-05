@@ -595,6 +595,25 @@ end
 
 
 ----------------------------------------------------------------
+-- rc_seqs
+--
+-- Reverse complement a batch of sequences.
+----------------------------------------------------------------
+function ConvNet:rc_seqs(seqs)
+    local rc_seqs = seqs:clone()
+    local seq_len = (#seqs)[4]
+
+    for li=1,seq_len do
+        rc_seqs[{{},1,1,li}] = seqs[{{},4,1,seq_len-li+1}]
+        rc_seqs[{{},2,1,li}] = seqs[{{},3,1,seq_len-li+1}]
+        rc_seqs[{{},3,1,li}] = seqs[{{},2,1,seq_len-li+1}]
+        rc_seqs[{{},4,1,li}] = seqs[{{},1,1,seq_len-li+1}]
+    end
+
+    return rc_seqs
+end
+
+----------------------------------------------------------------
 -- sanitize
 --
 -- Clear the intermediate states in the model before
@@ -851,7 +870,7 @@ end
 --
 -- Predict targets for X and compare to Y.
 ----------------------------------------------------------------
-function ConvNet:test(Xf, Yf, batch_size)
+function ConvNet:test(Xf, Yf, batch_size, rc_avg)
     -- track the loss across batches
     local loss = 0
 
@@ -879,6 +898,20 @@ function ConvNet:test(Xf, Yf, batch_size)
 
         -- predict
         local preds_batch = self.model:forward(inputs)
+
+        if rc_avg then
+            -- save the forward orientation
+            local preds_batch_fwd = preds_batch:clone()
+
+            -- reverse complement the sequences
+            local rc_inputs = self:rc_seqs(inputs)
+
+            -- predict. preds_batch now holds the reverse
+            self.model:forward(rc_inputs)
+
+            -- so add back the forward, and average
+            preds_batch = (preds_batch + preds_batch_fwd) / 2
+        end
 
         -- accumulate loss
         loss = loss + self.criterion:forward(preds_batch, targets)

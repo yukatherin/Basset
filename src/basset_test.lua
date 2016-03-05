@@ -20,6 +20,7 @@ cmd:text()
 cmd:text('Options:')
 cmd:option('-batch', 128, 'Batch size')
 cmd:option('-cuda', false, 'Run on GPGPU')
+cmd:option('-rc', false, 'Average forward and reverse complement')
 cmd:text()
 opt = cmd:parse(arg)
 
@@ -51,7 +52,7 @@ convnet:load(convnet_params)
 convnet.model:evaluate()
 
 -- measure accuracy on a test set
-local loss, AUCs, roc_points = convnet:test(test_seqs, test_targets, opt.batch_size)
+local loss, AUCs, roc_points = convnet:test(test_seqs, test_targets, opt.batch_size, opt.rc)
 local avg_auc = torch.mean(AUCs)
 
 -- cd to output dir
