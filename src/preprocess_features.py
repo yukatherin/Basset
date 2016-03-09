@@ -2,6 +2,7 @@
 from optparse import OptionParser
 import gzip
 import os
+import re
 import subprocess
 import sys
 
@@ -22,9 +23,10 @@ import numpy as np
 def main():
     usage = 'usage: %prog [options] <target_beds_file>'
     parser = OptionParser(usage)
-    parser.add_option('-a', dest='db_act_file', help='Existing database activity table.')
-    parser.add_option('-b', dest='db_bed', help='Existing database BED file.')
+    parser.add_option('-a', dest='db_act_file', default=None, help='Existing database activity table.')
+    parser.add_option('-b', dest='db_bed', default=None, help='Existing database BED file.')
     parser.add_option('-c', dest='chrom_lengths_file', help='Table of chromosome lengths')
+    parser.add_option('-i', dest='ignore_auxiliary', default=False, action='store_true', help='Ignore auxiliary chromosomes that don\'t match "chr\d+ or chrX" [Default: %default]')
     parser.add_option('-m', dest='merge_overlap', default=200, type='int', help='Overlap length (after extension to feature_size) above which to merge features [Default: %default]')
     parser.add_option('-n', dest='no_db_activity', default=False, action='store_true', help='Do not pass along the activities of the database sequences [Default: %default]')
     parser.add_option('-o', dest='out_prefix', default='features', help='Output file prefix [Default: %default]')
@@ -40,7 +42,7 @@ def main():
     # determine whether we'll add to an existing DB
     db_targets = []
     db_add = False
-    if options.db_bed:
+    if options.db_bed is not None:
         db_add = True
         if not options.no_db_activity:
             if options.db_act_file is None:
@@ -94,11 +96,19 @@ def main():
             a = line.split('\t')
             a[-1] = a[-1].rstrip()
 
+            # hash by chrom/strand
             chrom = a[0]
             strand = '+'
             if len(a) > 5 and a[5] in '+-':
                 strand = a[5]
             chrom_key = (chrom,strand)
+
+            # adjust coordinates to midpoint
+            start = int(a[1])
+            end = int(a[2])
+            mid = find_midpoint(start, end)
+            a[1] = str(mid)
+            a[2] = str(mid + 1)
 
             # open chromosome file
             if chrom_key not in chrom_outs:
@@ -134,8 +144,21 @@ def main():
         for orient in '+-':
             chrom_key = ('chrY',orient)
             if chrom_key in chrom_files:
+                print >> sys.stderr, 'Ignoring chrY %s' % orient
                 os.remove(chrom_files[chrom_key])
                 del chrom_files[chrom_key]
+
+    # ignore auxiliary
+    if options.ignore_auxiliary:
+        primary_re = re.compile('chr\d+$')
+        for chrom_key in chrom_files.keys():
+            chrom,strand = chrom_key
+            primary_m = primary_re.match(chrom)
+            if not primary_m and chrom != 'chrX':
+                print >> sys.stderr, 'Ignoring %s %s' % (chrom,strand)
+                os.remove(chrom_files[chrom_key])
+                del chrom_files[chrom_key]
+
 
     #################################################################
     # sort chromosome-specific files
@@ -260,6 +283,12 @@ def activity_set(act_cs):
     return aset
 
 
+def find_midpoint(start, end):
+    ''' Find the midpoint coordinate between start and end '''
+    mid = (start + end)/2
+    return mid
+
+
 def merge_peaks(peaks, peak_size, merge_overlap, chrom_len):
     ''' Merge and the list of Peaks.
 
@@ -298,6 +327,8 @@ def merge_peaks(peaks, peak_size, merge_overlap, chrom_len):
 
 def merge_peaks_dist(peaks, peak_size, chrom_len):
     ''' Merge and grow the Peaks in the given list.
+
+    Obsolete
 
     Attributes:
         peaks (list[Peak]) : list of Peaks
@@ -353,8 +384,7 @@ class Peak:
             ext_len (int) : length to extend the peak to
             chrom_len (int) : chromosome length to cap the peak at
         '''
-        mid = (self.start + self.end - 1) / 2.0
-        mid = int(0.5 + mid)
+        mid = find_midpoint(self.start, self.end)
         self.start = max(0, mid - ext_len/2)
         self.end = self.start + ext_len
         if chrom_len and self.end > chrom_len:
@@ -384,8 +414,8 @@ class Peak:
             chrom_len (int) : chromosome length to cap the peak at
         '''
         # find peak midpoints
-        peak_mids = [(self.start + self.end - 1) / 2.0]
-        peak_mids.append((peak2.start + peak2.end - 1) / 2.0)
+        peak_mids = [find_midpoint(self.start,self.end)]
+        peak_mids.append(find_midpoint(peak2.start,peak2.end))
 
         # weight peaks
         peak_weights = [1+len(self.act)]
