@@ -21,6 +21,7 @@ cmd:option('-batch', 128, 'Batch size')
 cmd:option('-cuda', false, 'Run on GPGPU')
 cmd:option('-cudnn', false, 'Run on GPGPU w/ cuDNN')
 cmd:option('-norm', false, 'Normalize all targets to a level plane')
+cmd:option('-rc', false, 'Average forward and reverse complement')
 cmd:option('-scores', false, 'Print scores instead of predictions')
 cmd:text()
 opt = cmd:parse(arg)
@@ -53,7 +54,7 @@ convnet:load(convnet_params)
 convnet.model:evaluate()
 
 -- measure accuracy on a test set
-local preds, scores = convnet:predict(test_seqs, opt.batch)
+local preds, scores = convnet:predict(test_seqs, opt.batch, false, opt.rc)
 
 if opt.norm then
     preds = troy_norm(preds, convnet.pred_means)

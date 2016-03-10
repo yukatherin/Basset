@@ -374,7 +374,7 @@ end
 --
 -- Predict targets for a new set of sequences.
 ----------------------------------------------------------------
-function ConvNet:predict(Xf, batch_size, Xtens)
+function ConvNet:predict(Xf, batch_size, Xtens, rc_avg)
     local bs = batch_size or self.batch_size
     local batcher
     if Xtens then
@@ -393,6 +393,9 @@ function ConvNet:predict(Xf, batch_size, Xtens)
     local preds = torch.Tensor(batcher.num_seqs, self.num_targets)
     local scores = torch.Tensor(batcher.num_seqs, self.num_targets)
     local pi = 1
+
+    -- collect garbage occasionaly
+    local cgi = 0
 
     -- get first batch
     local Xb = batcher:next()
@@ -415,10 +418,32 @@ function ConvNet:predict(Xf, batch_size, Xtens)
             pi = pi + 1
         end
 
+        if rc_avg then
+            -- reverse complement the sequences
+            local Xb_rc = self:rc_seqs(Xb)
+
+            -- predict. preds_batch now holds the new values
+            self.model:forward(Xb_rc)
+
+            -- move back pi
+            pi = pi - (#preds_batch)[1]
+
+            -- copy into larger Tensor
+            for i = 1,(#preds_batch)[1] do
+                preds[{pi,{}}] = preds_batch[{i,{}}]:float()
+                scores[{pi,{}}] = scores_batch[{i,{}}]:float()
+                pi = pi + 1
+            end
+        end
+
         -- next batch
         Xb = batcher:next()
 
-        collectgarbage()
+        -- collect garbage occasionaly
+        cgi = cgi + 1
+        if cgi % 100 == 0 then
+            collectgarbage()
+        end
     end
 
     return preds, scores
