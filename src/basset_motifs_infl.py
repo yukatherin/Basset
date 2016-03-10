@@ -37,6 +37,7 @@ def main():
     parser.add_option('-s', dest='sample', default=None, type='int', help='Sample sequences from the test set [Default:%default]')
     parser.add_option('--seqs', dest='seqs', default=False, action='store_true', help='Output sequence-specific influence [Default: %default]')
     parser.add_option('-t', dest='targets_file', default=None, help='File specifying target indexes and labels in table format')
+    parser.add_option('--target_class', dest='target_class_file', default=None, help='Target classifications to annotate heat map [Default: %default]')
     parser.add_option('--width', dest='heat_width', default=10, type='float')
     parser.add_option('--height', dest='heat_height', default=20, type='float')
     parser.add_option('--font', dest='heat_font', default=0.4, type='float')
@@ -63,6 +64,11 @@ def main():
 
     # name the targets
     target_names = name_targets(seq_targets.shape[1], options.targets_file)
+
+    # classify the targets
+    target_colors = None
+    if options.target_class_file:
+        target_colors = assign_class_colors(options.target_class_file)
 
     if options.subset_file:
         target_subset = set([line.rstrip() for line in open(options.subset_file)])
@@ -250,12 +256,60 @@ def main():
     if options.subset_file:
         subset_mask = df_ft.columns.isin(target_subset)
         df_ft_sub = df_ft.loc[:,subset_mask]
+        if target_colors is not None:
+            target_colors = target_colors[subset_mask]
 
-        plot_infl_heatmaps(df_ft_sub, options.out_dir, options.heat_width, options.heat_height, options.heat_font)
+        plot_infl_heatmaps(df_ft_sub, options.out_dir, options.heat_width, options.heat_height, options.heat_font, target_colors)
 
     # plot all cells
     else:
-        plot_infl_heatmaps(df_ft, options.out_dir, options.heat_width, options.heat_height, options.heat_font)
+        plot_infl_heatmaps(df_ft, options.out_dir, options.heat_width, options.heat_height, options.heat_font, target_colors)
+
+
+def assign_class_colors(target_class_file):
+    # get colors
+    colors = sns.color_palette("Set2", 8)
+
+    # assign
+    target_colors = []
+    for line in open('../data/cell_annotations.txt'):
+        a = line.split()
+        anns = a[2].split('/')
+
+        if 'blood' in anns:
+            target_colors.append(colors[3])
+
+        elif 'immortal' in anns:
+            target_colors.append(colors[7])
+
+        elif 'brain' in anns:
+            target_colors.append(colors[2])
+
+        elif 'endothelial' in anns:
+            target_colors.append(colors[4])
+
+        elif 'heart' in anns:
+            target_colors.append('#f93d28')
+
+        elif 'muscle' in anns:
+            target_colors.append(colors[5])
+
+        elif 'fibroblast' in anns:
+            target_colors.append(colors[0])
+
+        elif 'epithelial' in anns:
+            target_colors.append(colors[1])
+
+        elif 'skin' in anns:
+            target_colors.append(colors[1])
+
+        elif 'pluripotent' in anns:
+            target_colors.append(colors[6])
+
+        else:
+            target_colors.append('white')
+
+    return np.array(target_colors)
 
 
 def coord_range(nums, buf_pct=0.05):
@@ -306,12 +360,12 @@ def name_targets(num_targets, targets_file):
     return target_names
 
 
-def plot_heat(mat, out_pdf, width, height):
+def plot_heat(mat, out_pdf, width, height, target_colors):
     ''' Plot a single filter influence heat map'''
 
     if mat.shape[1] > 2:
         plt.figure()
-        g = sns.clustermap(mat, figsize=(width,height))
+        g = sns.clustermap(mat, figsize=(width,height), col_colors=target_colors)
 
         for tick in g.ax_heatmap.get_xticklabels():
             tick.set_rotation(-45)
@@ -324,26 +378,26 @@ def plot_heat(mat, out_pdf, width, height):
     plt.close()
 
 
-def plot_infl_heatmaps(unit_target_deltas, out_dir, width=10, height=20, font=0.4):
+def plot_infl_heatmaps(unit_target_deltas, out_dir, width=10, height=20, font=0.4, target_colors=None):
     ''' Plot a variety of heatmaps about the filter influence per cell data frame '''
 
     sns.set(style='white', font_scale=font)
 
     # plot influences per cell
-    plot_heat(unit_target_deltas, '%s/infl_target.pdf' % out_dir, width, height)
+    plot_heat(unit_target_deltas, '%s/infl_target.pdf' % out_dir, width, height, target_colors)
 
     # normalize per cell
     utd_z = preprocessing.scale(unit_target_deltas, axis=1)
     unit_target_deltas_norm = pd.DataFrame(utd_z, index=unit_target_deltas.index, columns=unit_target_deltas.columns)
 
-    plot_heat(unit_target_deltas_norm, '%s/infl_target_norm.pdf' % out_dir, width, height)
+    plot_heat(unit_target_deltas_norm, '%s/infl_target_norm.pdf' % out_dir, width, height, target_colors)
 
     # use only annotated filters
     annotated = np.array([label.find('_')!=-1 for label in unit_target_deltas_norm.index])
     unit_target_deltas_ann = unit_target_deltas_norm[annotated]
 
     if unit_target_deltas_ann.shape[0] > 0:
-        plot_heat(unit_target_deltas_ann, '%s/infl_target_ann.pdf' % out_dir, width, height)
+        plot_heat(unit_target_deltas_ann, '%s/infl_target_ann.pdf' % out_dir, width, height, target_colors)
 
 
 ################################################################################
