@@ -995,3 +995,101 @@ function table_ext(try, default, size)
 
     return var
 end
+
+
+----------------------------------------------------------------
+-- test_mc
+--
+-- Predict targets for X and compare to Y.
+----------------------------------------------------------------
+function ConvNet:test_mc(Xf, Yf, batch_size)
+    -- requires stochasticity
+    self.model:training()
+
+    local mcmc_iters = 100
+
+    -- track the loss across batches
+    local loss = 0
+
+    -- collect garbage occasionaly
+    local cgi = 0
+
+    -- create a batcher to help
+    local batch_size = batch_size or self.batch_size
+    local batcher = Batcher:__init(Xf, Yf, batch_size)
+
+    -- track predictions across batches
+    local preds = torch.Tensor(batcher.num_seqs, self.num_targets)
+    local pi = 1
+
+    -- get first batch
+    local inputs, targets = batcher:next()
+
+    -- while batches remain
+    while inputs ~= nil do
+        -- cuda
+        if cuda then
+            inputs = inputs:cuda()
+            targets = targets:cuda()
+        end
+
+        -- predict
+        local preds_batch = self.model:forward(inputs)
+        for mi = 2,mcmc_iters do
+            local preds_batch_mc = self.model:forward(inputs)
+            preds_batch = preds_batch + preds_batch_mc
+        end
+        preds_batch = preds_batch / mcmc_iters
+
+        -- accumulate loss
+        loss = loss + self.criterion:forward(preds_batch, targets)
+
+        -- copy into larger Tensor
+        for i = 1,(#preds_batch)[1] do
+            preds[{pi,{}}] = preds_batch[{i,{}}]:float()
+            pi = pi + 1
+        end
+
+        -- next batch
+        inputs, targets = batcher:next()
+
+        -- collect garbage occasionaly
+        cgi = cgi + 1
+        if cgi % 100 == 0 then
+            collectgarbage()
+        end
+    end
+
+    -- mean loss over examples
+    local avg_loss = loss / batcher.num_seqs
+
+    -- save pred means and stds
+    self.pred_means = preds:mean(1):squeeze()
+    self.pred_stds = preds:std(1):squeeze()
+
+    local Ydim = batcher.num_targets
+    if self.target_type == "binary" then
+        -- compute AUC
+        local AUCs = torch.Tensor(Ydim)
+        local roc_points = {}
+        for yi = 1,Ydim do
+            -- read Yi from file
+            local Yi = Yf:partial({1,batcher.num_seqs},{yi,yi}):squeeze()
+
+            -- compute ROC points
+            roc_points[yi] = ROC.points(preds[{{},yi}], Yi)
+
+            -- compute AUCs
+            AUCs[yi] = ROC.area(roc_points[yi])
+
+            collectgarbage()
+        end
+
+        return avg_loss, AUCs, roc_points
+    else
+        -- compute R2
+        local R2s = variance_explained(Yf, preds)
+
+        return avg_loss, R2s
+    end
+end
