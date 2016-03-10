@@ -23,7 +23,7 @@ def main():
     else:
         hdf5_file = args[0]
 
-    bed_re = re.compile('(chr\w+):(\d+)-(\d+)\([+-]\)')
+    bed_re = re.compile('(chr\w+):(\d+)-(\d+)\(([+-])\)')
 
     hdf5_in = h5py.File(hdf5_file, 'r')
 
@@ -32,7 +32,8 @@ def main():
         chrom = bed_m.group(1)
         start = int(bed_m.group(2))
         end = int(bed_m.group(3))
-        print '%s\t%d\t%d' % (chrom,start,end)
+        strand = bed_m.group(4)
+        print '%s\t%d\t%d\t.\t1\t%s' % (chrom,start,end,strand)
 
     hdf5_in.close()
 
