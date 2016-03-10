@@ -153,13 +153,13 @@ def main():
     plt.close()
 
     # print table
-    table_out = open('%s/table_scores.txt' % options.out_dir, 'w')
+    table_out = open('%s/table.txt' % options.out_dir, 'w')
 
     mi = 0
     for protein in db_motifs:
         for ti in range(scores_diffs.shape[1]):
             cols = (protein, ti, scores_diffs[mi,ti], preds_diffs[mi,ti])
-            print >> table_out, '%-10s  %3d  %5.2f  %5.2f' % cols
+            print >> table_out, '%-10s  %3d  %6.3f  %6.3f' % cols
         mi += 1
 
     table_out.close()
@@ -167,6 +167,7 @@ def main():
     #################################################################
     # filter diffs
     #################################################################
+    '''
     for l in range(3):
         motif_filters_df = pd.DataFrame(reprs_diffs[l], index=db_motifs.keys())
 
@@ -195,6 +196,7 @@ def main():
             mi += 1
 
         table_out.close()
+    '''
 
 
 ################################################################################
