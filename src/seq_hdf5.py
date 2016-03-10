@@ -5,6 +5,7 @@ import sys
 import h5py
 import numpy.random as npr
 import numpy as np
+import pandas as pd
 
 import dna_io
 
@@ -21,6 +22,7 @@ import dna_io
 def main():
     usage = 'usage: %prog [options] <fasta_file> <targets_file> <out_file>'
     parser = OptionParser(usage)
+    parser.add_option('-a', dest='add_features_file', default=None, help='Table of additional features')
     parser.add_option('-b', dest='batch_size', default=None, type='int', help='Align sizes with batch size')
     parser.add_option('-c', dest='counts', default=False, action='store_true', help='Validation and training proportions are given as raw counts [Default: %default]')
     parser.add_option('-e', dest='extend_length', type='int', default=None, help='Extend all sequences to this length [Default: %default]')
@@ -48,19 +50,29 @@ def main():
     # reshape sequences for torch
     seqs = seqs.reshape((seqs.shape[0],4,1,seqs.shape[1]/4))
 
+    # read headers
     headers = []
     for line in open(fasta_file):
         if line[0] == '>':
             headers.append(line[1:].rstrip())
     headers = np.array(headers)
 
+    # read labels
     target_labels = open(targets_file).readline().strip().split('\t')
 
+    # read additional features
+    if options.add_features_file:
+        df_add = pd.read_table(options.add_features_file, index_col=0)
+        df_add = df_add.astype(np.float32, copy=False)
+
+    # permute
     if options.permute:
         order = npr.permutation(seqs.shape[0])
         seqs = seqs[order]
         targets = targets[order]
         headers = headers[order]
+        if options.add_features_file:
+            df_add = df_add.iloc[order]
 
     # check proper sum
     if options.counts:
@@ -95,6 +107,14 @@ def main():
     i += valid_count
     test_seqs, test_targets, test_headers = seqs[i:i+test_count,:], targets[i:i+test_count,:], headers[i:i+test_count]
 
+    if options.add_features_file:
+        i = 0
+        train_add = df_add.iloc[i:i+train_count]
+        i += train_count
+        valid_add = df_add.iloc[i:i+valid_count]
+        i += valid_count
+        test_add = df_add.iloc[i:i+test_count]
+
     #################################################################
     # construct hdf5 representation
     #################################################################
@@ -114,6 +134,16 @@ def main():
         h5f.create_dataset('test_in', data=test_seqs)
         h5f.create_dataset('test_out', data=test_targets)
         h5f.create_dataset('test_headers', data=test_headers)
+
+    if options.add_features_file:
+        h5f.create_dataset('add_labels', data=list(df_add.columns))
+
+        if train_count > 0:
+            h5f.create_dataset('train_add', data=train_add.as_matrix())
+        if valid_count > 0:
+            h5f.create_dataset('valid_add', data=valid_add.as_matrix())
+        if test_count > 0:
+            h5f.create_dataset('test_add', data=test_add.as_matrix())
 
     h5f.close()
 
