@@ -8,6 +8,7 @@ function troy_norm(p, u)
     else
         un = torch.log(torch.cdiv(u,-u+1)):repeatTensor((#p)[1], 1)
     end
+    un = un:float()
     local zn = pn + xn - un
     return (torch.exp(-zn)+1):pow(-1)
 end
