@@ -17,7 +17,7 @@ cmd:argument('data_file')
 cmd:argument('out_file')
 cmd:text()
 cmd:text('Options:')
-cmd:option('-batch_size', 200, 'Batch size')
+cmd:option('-batch_size', 128, 'Batch size')
 cmd:option('-cuda', false, 'Run on GPGPU')
 cmd:option('-norm', false, 'Normalize all targets to a level plane')
 cmd:option('-pool', 10, 'Pool adjacent positions for filter outputs')
@@ -64,6 +64,11 @@ local preds = torch.Tensor(num_seqs, num_targets)
 local filter_outs = torch.Tensor(num_seqs, convnet.conv_filters[1], pseq_len)
 local si = 1
 
+-- maintain variables
+local preds_batch
+local filter_outs_batch
+local filter_outs_pool
+
 -- initialize batcher
 local batcher = Batcher:__init(test_seqs, nil, opt.batch_size)
 
@@ -78,12 +83,12 @@ while Xb ~= nil do
     end
 
     -- predict
-    local preds_batch = convnet.model:forward(Xb)
+    preds_batch = convnet.model:forward(Xb)
 
     -- get filter outputs
-    local filter_outs_batch = convnet:get_nonlinearity(1).output:squeeze()
+    filter_outs_batch = convnet:get_nonlinearity(1).output:squeeze()
 
-    local filter_outs_pool = nn_pool:updateOutput(filter_outs_batch)
+    filter_outs_pool = nn_pool:updateOutput(filter_outs_batch)
 
     -- copy into full Tensors
     for i = 1,(#preds_batch)[1] do

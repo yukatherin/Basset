@@ -10,13 +10,20 @@ import pandas as pd
 import seaborn as sns
 from scipy.stats import spearmanr, pearsonr
 from sklearn.linear_model import Ridge
+from sklearn.metrics import roc_auc_score, roc_curve
 
 import dna_io
 from seq_logo import seq_logo
 
+sns_colors = sns.color_palette('deep')
+
 ################################################################################
 # basset_cofilters.py
 #
+# Study accuracy and co-filter activations from each individual filter's
+# perspective.
+#
+# Very underdeveloped.
 ################################################################################
 
 ################################################################################
@@ -54,13 +61,9 @@ def main():
     # load (sampled) test data from HDF5
     hdf5_in = h5py.File(test_hdf5_file, 'r')
     seqs_1hot = np.array(hdf5_in['test_in'])
-    targets = np.array(hdf5_in['test_out'])
-    try: # TEMP
-        seq_headers = np.array(hdf5_in['test_headers'])
-        target_labels = np.array(hdf5_in['target_labels'])
-    except:
-        seq_headers = None
-        target_labels = None
+    seq_targets = np.array(hdf5_in['test_out'])
+    seq_headers = np.array(hdf5_in['test_headers'])
+    # target_labels = np.array(hdf5_in['target_labels'])
     hdf5_in.close()
 
     # sample
@@ -68,13 +71,13 @@ def main():
         sample_i = np.array(random.sample(xrange(seqs_1hot.shape[0]), options.sample))
         seqs_1hot = seqs_1hot[sample_i]
         seq_headers = seq_headers[sample_i]
-        targets = targets[sample_i]
+        seq_targets = seq_targets[sample_i]
 
         # write sampled data to a new HDF5 file
         test_hdf5_file = '%s/model_in.h5'%options.out_dir
         h5f = h5py.File(test_hdf5_file, 'w')
         h5f.create_dataset('test_in', data=seqs_1hot)
-        h5f.create_dataset('test_out', data=targets)
+        h5f.create_dataset('test_out', data=seq_targets)
         h5f.close()
 
     # convert to ACGT sequences
@@ -102,7 +105,17 @@ def main():
     num_seqs = filter_outs.shape[0]
     num_filters = filter_outs.shape[1]
     pool_len = filter_outs.shape[2]
-    num_targets = targets.shape[1]
+    num_targets = seq_targets.shape[1]
+
+    if options.filters == '-1':
+        study_filters = range(num_filters)
+    else:
+        study_filters = [int(fi) for fi in options.filters.split(',')]
+
+    if options.targets == '-1':
+        study_targets = range(num_targets)
+    else:
+        study_targets = [int(t) for t in options.targets.split(',')]
 
 
     #################################################################
@@ -140,18 +153,42 @@ def main():
 
 
     #################################################################
+    # measure accuracy
+    #################################################################
+    auc_out = open('%s/aucs.txt' % options.out_dir, 'w')
+    for fi in range(num_filters):
+        for ti in range(num_targets):
+            if len(filter_seqs[fi]) > 10 and 3 < sum(seq_targets[filter_seqs[fi],ti]) < len(filter_seqs[fi])-3:
+                auc = roc_auc_score(seq_targets[filter_seqs[fi],ti], preds[filter_seqs[fi],ti])
+                print >> auc_out, '%-3d  %3d  %3d  %.4f' % (fi, ti, len(filter_seqs[fi]), auc)
+
+                if fi in study_filters and ti in study_targets:
+                    fpr, tpr, thresh = roc_curve(seq_targets[filter_seqs[fi],ti], preds[filter_seqs[fi],ti])
+
+                    plt.figure(figsize=(6,6))
+                    plt.scatter(fpr, tpr, s=8, linewidths=0, c=sns_colors[0])
+                    plt.plot([0,1], [0,1], c='black', linewidth=1, linestyle='--')
+                    plt.xlabel('False positive rate')
+                    plt.ylabel('True positive rate')
+                    plt.xlim((0,1))
+                    plt.ylim((0,1))
+                    plt.grid(True)
+                    plt.tight_layout()
+
+                    out_pdf = '%s/roc_f%d_t%d.pdf' % (options.out_dir, fi, ti)
+                    plt.savefig(out_pdf)
+                    plt.close()
+            else:
+                print >> auc_out, '%-3d  %3d  %3d  %.4f' % (fi, ti, len(filter_seqs[fi]), 0)
+
+    auc_out.close()
+
+    exit()
+
+
+    #################################################################
     # study filters
     #################################################################
-    if options.filters == '-1':
-        study_filters = range(num_filters)
-    else:
-        study_filters = [int(fi) for fi in options.filters.split(',')]
-
-    if options.targets == '-1':
-        study_targets = range(num_targets)
-    else:
-        study_targets = [int(t) for t in options.targets.split(',')]
-
     preds_means = preds.mean(axis=0)
 
     table_out = open('%s/filter_target_anchor.txt' % options.out_dir, 'w')
@@ -178,7 +215,7 @@ def main():
                 ###########################################
                 fa_outs = filter_outs[filter_seqs[fi],fi,:]
                 fa_preds = preds[filter_seqs[fi],ti]
-                fa_targets = targets[filter_seqs[fi],ti]
+                fa_targets = seq_targets[filter_seqs[fi],ti]
 
                 fa_preds_mean = fa_preds.mean()
 
