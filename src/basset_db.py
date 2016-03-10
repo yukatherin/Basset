@@ -24,9 +24,10 @@ def main():
     usage = 'usage: %prog [options] <db_file> <model_file> <test_hdf5_file>'
     parser = OptionParser(usage)
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5.')
+    parser.add_option('-m', dest='motifs_study', default='', help='Comma-separated list of motifs to study in more detail [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='.')
     parser.add_option('-s', dest='sample', default=256, type='int', help='Sequences to sample [Default: %default]')
-    parser.add_option('-t', dest='targets_file', default=None, help='File labelings targets in the second column [Default: %default]')
+    parser.add_option('-t', dest='targets_study', default='', help='Comma-separated list of targets to study in more detail [Default: %default]')
     (options,args) = parser.parse_args()
 
     if len(args) != 3:
@@ -39,6 +40,10 @@ def main():
     if not os.path.isdir(options.out_dir):
         os.mkdir(options.out_dir)
 
+    # these both currently don't do anything
+    # options.motifs_study = options.motifs_study.split(',')
+    # options.targets_study = [int(ti) for ti in options.targets_study.split(',')]
+
     #################################################################
     # load data
     #################################################################
@@ -46,13 +51,9 @@ def main():
     test_hdf5_in = h5py.File(test_hdf5_file, 'r')
     seq_vecs = np.array(test_hdf5_in['test_in'])
     seq_targets = np.array(test_hdf5_in['test_out'])
+    target_labels = np.array(test_hdf5_in['target_labels'])
     test_hdf5_in.close()
 
-    # read target labels
-    if options.targets_file:
-        target_labels = [line.split()[1] for line in open(options.targets_file)]
-    else:
-        target_labels = ['t%d'%(ti+1) for ti in range(seq_targets.shape[1])]
 
     #################################################################
     # sample
@@ -123,14 +124,14 @@ def main():
 
     # load model output
     model_hdf5_in = h5py.File(options.model_hdf5_file, 'r')
-    scores_diffs = np.array(model_hdf5_in['scores'])
+    scores_diffs = np.array(model_hdf5_in['scores_diffs'])
+    preds_diffs = np.array(model_hdf5_in['preds_diffs'])
     reprs_diffs = []
     l = 1
     while 'reprs%d'%l in model_hdf5_in:
         reprs_diffs.append(np.array(model_hdf5_in['reprs%d'%l]))
         l += 1
     model_hdf5_in.close()
-
 
     #################################################################
     # score diffs
@@ -157,8 +158,8 @@ def main():
     mi = 0
     for protein in db_motifs:
         for ti in range(scores_diffs.shape[1]):
-            cols = (protein, ti, scores_diffs[mi,ti])
-            print >> table_out, '%-10s  %3d  %5.2f' % cols
+            cols = (protein, ti, scores_diffs[mi,ti], preds_diffs[mi,ti])
+            print >> table_out, '%-10s  %3d  %5.2f  %5.2f' % cols
         mi += 1
 
     table_out.close()
