@@ -56,11 +56,15 @@ end
 -- predict
 ----------------------------------------------------------------
 -- make initial predictions
-local preds, scores, reprs = convnet:predict_repr(test_seqs, opt.batch_size, true)
+local preds, scores, reprs = convnet:predict_reprs(test_seqs, opt.batch_size, true)
+
+-- normalize
+troy_norm(preds, convnet.pred_means)
 
 -- initialize difference storage
 local num_targets = (#preds)[2]
 local scores_diffs = torch.Tensor(num_motifs, num_targets)
+local preds_diffs = torch.Tensor(num_motifs, num_targets)
 local reprs_diffs = {}
 for l = 1,#reprs do
     reprs_diffs[l] = torch.Tensor(num_motifs, (#reprs[l])[2])
@@ -68,7 +72,8 @@ end
 
 -- compute score mean and variance
 local scores_means = scores:mean(1):squeeze()
-local scores_stds = scores:std(1):squeeze()
+-- local scores_stds = scores:std(1):squeeze()
+local preds_means = preds:mean(1):squeeze()
 
 -- compute hidden unit means
 local reprs_means = {}
@@ -113,10 +118,14 @@ for mi = 1,num_motifs do
     end
 
     -- predict
-    local mpreds, mscores, mreprs = convnet:predict_repr(test_seqs_motif, opt.batch_size, true)
+    local mpreds, mscores, mreprs = convnet:predict_reprs(test_seqs_motif, opt.batch_size, true)
+
+    -- normalize
+    troy_norm(preds, convnet.pred_means)
 
     -- compute stats
     local mscores_means = mscores:mean(1):squeeze()
+    local mpreds_means = mpreds:mean(1):squeeze()
     local mreprs_means = {}
     for l = 1,#reprs do
         if mreprs[l]:nDimension() == 2 then
@@ -130,6 +139,7 @@ for mi = 1,num_motifs do
 
     -- save difference
     scores_diffs[mi] = mscores_means - scores_means
+    preds_diffs[mi] = mpreds_means - preds_means
 
     -- compute a statistical test?
 
@@ -143,7 +153,8 @@ end
 -- dump to file, load into python
 ----------------------------------------------------------------
 local hdf_out = hdf5.open(opt.out_file, 'w')
-hdf_out:write('scores', scores_diffs)
+hdf_out:write('scores_diffs', scores_diffs)
+hdf_out:write('preds_diffs', preds_diffs)
 for l = 1,#reprs_diffs do
     local repr_name = string.format("reprs%d", l)
     hdf_out:write(repr_name, reprs_diffs[l])
