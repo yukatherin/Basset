@@ -19,13 +19,15 @@ cmd:text()
 cmd:text('Options:')
 cmd:option('-batch', 128, 'Batch size')
 cmd:option('-cuda', false, 'Run on GPGPU')
+cmd:option('-cudnn', false, 'Run on GPGPU w/ cuDNN')
 cmd:option('-norm', false, 'Normalize all targets to a level plane')
 cmd:option('-scores', false, 'Print scores instead of predictions')
 cmd:text()
 opt = cmd:parse(arg)
 
 -- set cpu/gpu
-cuda = opt.cuda
+cudnn = opt.cudnn
+cuda = opt.cuda or opt.cudnn
 require 'convnet'
 
 ----------------------------------------------------------------

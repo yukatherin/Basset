@@ -20,12 +20,14 @@ cmd:text()
 cmd:text('Options:')
 cmd:option('-batch', 128, 'Batch size')
 cmd:option('-cuda', false, 'Run on GPGPU')
+cmd:option('-cudnn', false, 'Run on GPGPU w/ cuDNN')
 cmd:option('-rc', false, 'Average forward and reverse complement')
 cmd:text()
 opt = cmd:parse(arg)
 
 -- set cpu/gpu
-cuda = opt.cuda
+cudnn = opt.cudnn
+cuda = opt.cuda or opt.cudnn
 require 'convnet'
 
 ----------------------------------------------------------------
