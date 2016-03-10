@@ -20,6 +20,7 @@ cmd:text('Options:')
 cmd:option('-batch', 128, 'Batch size')
 cmd:option('-cuda', false, 'Run on GPGPU')
 cmd:option('-norm', false, 'Normalize all targets to a level plane')
+cmd:option('-scores', false, 'Print scores instead of predictions')
 cmd:text()
 opt = cmd:parse(arg)
 
@@ -50,14 +51,9 @@ convnet:load(convnet_params)
 convnet.model:evaluate()
 
 -- measure accuracy on a test set
-local preds = convnet:predict(test_seqs, opt.batch)
+local preds, scores = convnet:predict(test_seqs, opt.batch)
 
 if opt.norm then
-    -- TEMP! TMP!
-    if convnet.pred_means == nil then
-        convnet.pred_means = preds:mean(1):squeeze()
-    end
-
     preds = troy_norm(preds, convnet.pred_means)
 end
 
@@ -67,13 +63,18 @@ data_open:close()
 ----------------------------------------------------------------
 -- dump to file
 ----------------------------------------------------------------
+local values = preds
+if opt.scores then
+    values = scores
+end
+
 local predict_out = io.open(opt.out_file, 'w')
 
 -- print predictions
-for si=1,(#preds)[1] do
-    predict_out:write(preds[{si,1}])
-    for ti=2,(#preds)[2] do
-        predict_out:write(string.format("\t%s",preds[{si,ti}]))
+for si=1,(#values)[1] do
+    predict_out:write(values[{si,1}])
+    for ti=2,(#values)[2] do
+        predict_out:write(string.format("\t%s",values[{si,ti}]))
     end
     predict_out:write("\n")
 end
