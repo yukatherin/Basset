@@ -34,6 +34,7 @@ def main():
     parser.add_option('-r', dest='rng_seed', default=1, type='float', help='Random number generator seed [Default: %default]')
     parser.add_option('-s', dest='sample', default=None, type='int', help='Sample sequences from the test set [Default:%default]')
     parser.add_option('-t', dest='targets', default='0', help='Comma-separated list of target indexes to plot (or -1 for all) [Default: %default]')
+    parser.add_option('--targets_file', dest='targets_file', help='Target labels file')
     (options,args) = parser.parse_args()
 
     if len(args) != 2:
@@ -81,6 +82,8 @@ def main():
             seqs_1hot = dna_io.load_sequences(input_file, permute=False)
             targets = None
             target_labels = None
+            if options.targets_file:
+                target_labels = [line.split()[1] for line in open(options.targets_file)]
 
         # sample
         if options.sample:
@@ -185,6 +188,19 @@ def main():
             header = 'seq%d' % si
         seq = seqs[si]
 
+        # plot predictions across all targets
+        plt.figure(figsize=(20,3))
+        sns.set(style='white', font_scale=1)
+        real_nt, pi = get_real_nt(seq_mod_preds[si,:,:,0], seq)
+        preds_heat = seq_mod_preds[si,real_nt,pi,:].reshape((1,-1))
+        g = sns.heatmap(preds_heat, vmin=0, vmax=1, linewidths=0, xticklabels=target_labels, yticklabels=False, cbar_kws={"orientation": "horizontal"})
+        for tick in g.get_xticklabels():
+            tick.set_rotation(-45)
+            tick.set_horizontalalignment('left')
+            tick.set_fontsize(4)
+        plt.savefig('%s/%s_preds.pdf' % (options.out_dir, header.replace(':','_')))
+        plt.close()
+
         # plot some descriptive heatmaps for each individual cell type
         for ci in plot_targets:
             seq_mod_preds_cell = seq_mod_preds[si,:,:,ci]
@@ -212,11 +228,11 @@ def main():
             else:
                 seq_heights = 0.25 + 1.75/vlim*(-minmax_matrix[0])
             logo_eps = '%s/%s_c%d_seq.eps' % (options.out_dir, header_filename(header), ci)
-            seq_logo(seq, seq_heights, logo_eps)
+            seq_logo(seq, seq_heights, logo_eps, color_mode='meme')
 
             # add to figure
             logo_png = '%s.png' % logo_eps[:-4]
-            subprocess.call('convert -density 300 %s %s' % (logo_eps, logo_png), shell=True)
+            subprocess.call('convert -density 600 %s %s' % (logo_eps, logo_png), shell=True)
             logo = Image.open(logo_png)
             ax_logo.imshow(logo)
             ax_logo.set_axis_off()
@@ -277,6 +293,24 @@ def header_filename(header):
     return header
 
 
+def get_real_nt(seq_mod_preds, seq):
+    ''' Return the real sequence prediction from the modified prediction matrix '''
+    si = 0
+    while seq[si] == 'N':
+        si += 1
+
+    if seq[si] == 'A':
+        real_nt = 0
+    elif seq[si] == 'C':
+        real_nt = 1
+    elif seq[si] == 'G':
+        real_nt = 2
+    else:
+        real_nt = 3
+
+    return real_nt, si
+
+
 def get_real_pred(seq_mod_preds, seq):
     ''' Return the real sequence prediction from the modified prediction matrix '''
     si = 0
@@ -293,6 +327,7 @@ def get_real_pred(seq_mod_preds, seq):
         real_pred = seq_mod_preds[3,si]
 
     return real_pred
+
 
 def subplot_params(seq_len):
     ''' Specify subplot layout parameters for various sequence lengths. '''
