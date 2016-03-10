@@ -145,7 +145,8 @@ def dna_one_hot(seq, seq_len=None, flatten=True):
     seq = seq.replace('T','3')
 
     # map nt's to a matrix 4 x len(seq) of 0's and 1's.
-    seq_code = np.zeros((4,seq_len), dtype='int8')
+    #  dtype='int8' fails for N's
+    seq_code = np.zeros((4,seq_len), dtype='float16')
     for i in range(seq_len):
         if i < seq_start:
             seq_code[:,i] = 0.25
@@ -153,10 +154,7 @@ def dna_one_hot(seq, seq_len=None, flatten=True):
             try:
                 seq_code[int(seq[i-seq_start]),i] = 1
             except:
-                # this fails with dype='int8'
-                # change to 'float16' and test it
-                # seq_code[:,i] = 0.25
-                pass
+                seq_code[:,i] = 0.25
 
     # flatten and make a column vector 1 x len(seq)
     if flatten:
