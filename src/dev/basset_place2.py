@@ -13,11 +13,14 @@ from sklearn.linear_model import BayesianRidge, LassoCV, LinearRegression
 from sklearn.gaussian_process import GaussianProcessRegressor
 
 import dna_io
+import stats
 
 ################################################################################
 # basset_place2.py
 #
+# Place pairs of filters into N's and study the predictions.
 #
+# Did not work well. Either N's confuse some models or there was a float bug.
 ################################################################################
 
 ################################################################################
@@ -51,7 +54,6 @@ def main():
     if options.cuda:
         cuda_str = '-cuda'
 
-
     #################################################################
     # place filter consensus motifs
     #################################################################
@@ -59,8 +61,8 @@ def main():
     filter_consensus = get_filter_consensus(model_file, options.out_dir, cuda_str)
 
     seqs_1hot = []
-    # num_filters = len(filter_consensus)
-    num_filters = 20
+    num_filters = len(filter_consensus)
+    # num_filters = 40
     filter_len = filter_consensus[0].shape[1]
 
     # position the motifs
@@ -164,9 +166,18 @@ def main():
 
         table_out.close()
 
+        scores_abs = abs(filter_interaction.flatten())
+        max_score = stats.quantile(scores_abs, .999)
+        print 'Limiting scores to +-%f' % max_score
+        filter_interaction_max = np.zeros((num_filters, num_filters))
+        for i in range(num_filters):
+            for j in range(num_filters):
+                filter_interaction_max[i,j] = np.min([filter_interaction[i,j], max_score])
+                filter_interaction_max[i,j] = np.max([filter_interaction_max[i,j], -max_score])
+
         # plot heat map
         plt.figure()
-        sns.heatmap(filter_interaction)
+        sns.heatmap(filter_interaction_max, xticklabels=False, yticklabels=False)
         plt.savefig('%s/heat_t%d.pdf' % (options.out_dir,ti))
 
 
