@@ -411,29 +411,27 @@ function ConvNet:predict(Xf, batch_size, Xtens, rc_avg)
         local preds_batch = self.model:forward(Xb)
         local scores_batch = self.model.modules[final_i].output
 
+        if rc_avg then
+            -- save the forward orientation
+            local preds_batch_fwd = preds_batch:clone()
+            local scores_batch_fwd = scores_batch:clone()
+
+            -- reverse complement the sequences
+            local Xb_rc = self:rc_seqs(Xb)
+
+            -- predict. preds_batch now holds the reverse
+            self.model:forward(Xb_rc)
+
+            -- so add back the forward, and average
+            preds_batch = (preds_batch + preds_batch_fwd) / 2
+            scores_batch = (scores_batch + scores_batch_fwd) / 2
+        end
+
         -- copy into larger Tensor
         for i = 1,(#preds_batch)[1] do
             preds[{pi,{}}] = preds_batch[{i,{}}]:float()
             scores[{pi,{}}] = scores_batch[{i,{}}]:float()
             pi = pi + 1
-        end
-
-        if rc_avg then
-            -- reverse complement the sequences
-            local Xb_rc = self:rc_seqs(Xb)
-
-            -- predict. preds_batch now holds the new values
-            self.model:forward(Xb_rc)
-
-            -- move back pi
-            pi = pi - (#preds_batch)[1]
-
-            -- copy into larger Tensor
-            for i = 1,(#preds_batch)[1] do
-                preds[{pi,{}}] = preds_batch[{i,{}}]:float()
-                scores[{pi,{}}] = scores_batch[{i,{}}]:float()
-                pi = pi + 1
-            end
         end
 
         -- next batch
