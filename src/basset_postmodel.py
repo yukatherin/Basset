@@ -8,6 +8,7 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+from sklearn.externals import joblib
 from sklearn.linear_model import BayesianRidge, LogisticRegression
 from sklearn.metrics import roc_auc_score
 
@@ -134,6 +135,8 @@ def main():
         print >> acc_out, roc_auc_score(test_y, test_preds)
         acc_out.close()
 
+    # save model
+    joblib.dump(model, '%s/model.pkl' % options.out_dir)
 
     #######################################################
     # analyze
