@@ -24,11 +24,12 @@ from sklearn.metrics import roc_auc_score
 def main():
     usage = 'usage: %prog [options] <repr_hdf5> <data_hdf5> <target_index>'
     parser = OptionParser(usage)
-    parser.add_option('-a', dest='sample', default=None, type='int', help='Sample from the training set [Default: %default]')
+    parser.add_option('-a', dest='add_only', default=False, action='store_true', help='Use additional features only; no sequence features')
     parser.add_option('-b', dest='balance', default=False, action='store_true', help='Downsample the negative set to balance [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='postmodel', help='Output directory [Default: %default]')
     parser.add_option('-r', dest='regression', default=False, action='store_true', help='Regression mode [Default: %default]')
     parser.add_option('-s', dest='seq_only', default=False, action='store_true', help='Use sequence features only; no additional features [Default: %default]')
+    parser.add_option('--sample', dest='sample', default=None, type='int', help='Sample from the training set [Default: %default]')
     parser.add_option('-t', dest='target_hdf5', default=None, help='Extract targets from this HDF5 rather than data_hdf5 argument')
     parser.add_option('-x', dest='regex_add', default=None, help='Filter additional features using a comma-separated list of regular expressions')
     (options,args) = parser.parse_args()
@@ -59,10 +60,11 @@ def main():
     test_y = np.array(target_hdf5_in['test_out'])[:,target_i]
 
     # load training representations
-    repr_hdf5_in = h5py.File(repr_hdf5_file, 'r')
-    train_x = np.array(repr_hdf5_in['train_repr'])
-    test_x = np.array(repr_hdf5_in['test_repr'])
-    repr_hdf5_in.close()
+    if not options.add_only:
+        repr_hdf5_in = h5py.File(repr_hdf5_file, 'r')
+        train_x = np.array(repr_hdf5_in['train_repr'])
+        test_x = np.array(repr_hdf5_in['test_repr'])
+        repr_hdf5_in.close()
 
     if options.seq_only:
         add_labels = []
@@ -78,9 +80,13 @@ def main():
             train_a, test_a, add_labels = train_a[:,fi], test_a[:,fi], add_labels[fi]
 
         # append additional features
-        add_i = train_x.shape[1]
-        train_x = np.concatenate((train_x,train_a), axis=1)
-        test_x = np.concatenate((test_x,test_a), axis=1)
+        if options.add_only:
+            add_i = 0
+            train_x, test_x = train_a, test_a
+        else:
+            add_i = train_x.shape[1]
+            train_x = np.concatenate((train_x,train_a), axis=1)
+            test_x = np.concatenate((test_x,test_a), axis=1)
 
     data_hdf5_in.close()
     if options.target_hdf5:
