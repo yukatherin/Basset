@@ -21,6 +21,7 @@ cmd:text('Options:')
 cmd:option('-batch_size', 300, 'Maximum batch size')
 cmd:option('-center_nt', 0, 'Mutate only the center nucleotides')
 cmd:option('-cuda', false, 'Run on GPGPU')
+cmd:option('-cudnn', false, 'Run on GPGPU w/ cuDNN')
 cmd:option('-norm', false, 'Normalize target predictions')
 cmd:option('-pre_sigmoid', false, 'Measure changes pre-sigmoid')
 opt = cmd:parse(arg)
@@ -28,7 +29,9 @@ opt = cmd:parse(arg)
 -- fix seed
 torch.manualSeed(1)
 
-cuda = opt.cuda
+-- set cpu/gpu
+cudnn = opt.cudnn
+cuda = opt.cuda or opt.cudnn
 require 'convnet'
 
 ----------------------------------------------------------------
