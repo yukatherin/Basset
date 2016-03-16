@@ -18,7 +18,7 @@ cmd:argument('data_file')
 cmd:argument('out_file')
 cmd:text()
 cmd:text('Options:')
-cmd:option('-batch_size', 300, 'Maximum batch size')
+cmd:option('-batch', 128, 'Maximum batch size')
 cmd:option('-center_nt', 0, 'Mutate only the center nucleotides')
 cmd:option('-cuda', false, 'Run on GPGPU')
 cmd:option('-cudnn', false, 'Run on GPGPU w/ cuDNN')
@@ -40,7 +40,6 @@ require 'convnet'
 local convnet_params = torch.load(opt.model_file)
 local convnet = ConvNet:__init()
 convnet:load(convnet_params)
-convnet:decuda()
 
 -- open HDF5 and get test sequences
 local data_open = hdf5.open(opt.data_file, 'r')
@@ -58,7 +57,7 @@ local fl = #convnet.model.modules - 1
 ----------------------------------------------------------------
 -- predict seqs
 convnet.model:evaluate()
-local preds, prepreds = convnet:predict(test_seqs, opt.batch_size)
+local preds, prepreds = convnet:predict(test_seqs, opt.batch, false, false)
 local num_targets = (#preds)[2]
 
 -- normalize predictions
