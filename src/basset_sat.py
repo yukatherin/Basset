@@ -25,6 +25,8 @@ def main():
     usage = 'usage: %prog [options] <model_file> <input_file>'
     parser = OptionParser(usage)
     parser.add_option('-a', dest='input_activity_file', help='Optional activity table corresponding to an input FASTA file')
+    parser.add_option('--cuda', dest='cuda', default=False, action='store_true', help='Run on GPGPU [Default: %default]')
+    parser.add_option('--cudnn', dest='cudnn', default=False, action='store_true', help='Run on GPGPU w/cuDNN [Default: %default]')
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5 [Default: %default]')
     parser.add_option('-g', dest='gain_height', default=False, action='store_true', help='Nucleotide heights determined by the max of loss and gain [Default: %default]')
     parser.add_option('-m', dest='min_limit', default=0.1, type='float', help='Minimum heatmap limit [Default: %default]')
@@ -145,7 +147,14 @@ def main():
     #################################################################
     if options.model_hdf5_file is None:
         options.model_hdf5_file = '%s/model_out.h5' % options.out_dir
-        torch_cmd = 'basset_sat_predict.lua -center_nt %d %s %s %s' % (options.center_nt, model_file, model_input_hdf5, options.model_hdf5_file)
+
+        gpgpu_str = ''
+        if options.cudnn:
+            gpgpu_str = '-cudnn'
+        elif options.cuda:
+            gpgpu_str = '-cuda'
+
+        torch_cmd = 'basset_sat_predict.lua %s -center_nt %d %s %s %s' % (gpgpu_str, options.center_nt, model_file, model_input_hdf5, options.model_hdf5_file)
         print torch_cmd
         subprocess.call(torch_cmd, shell=True)
 
