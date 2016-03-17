@@ -390,8 +390,8 @@ function ConvNet:predict(Xf, batch_size, Xtens, rc_avg)
     end
 
     -- track predictions across batches
-    local preds = torch.Tensor(batcher.num_seqs, self.num_targets)
-    local scores = torch.Tensor(batcher.num_seqs, self.num_targets)
+    local preds = torch.FloatTensor(batcher.num_seqs, self.num_targets)
+    local scores = torch.FloatTensor(batcher.num_seqs, self.num_targets)
     local pi = 1
 
     -- collect garbage occasionaly
