@@ -40,7 +40,6 @@ def main():
     parser.add_option('-n', dest='num_seqs', default=100000, type='int', help='Number of sequences to predict [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='.')
     parser.add_option('-r', dest='rc', default=False, action='store_true', help='Consider k-mers w/ their reverse complements [Default: %default]')
-    parser.add_option('-s', dest='sample', default=None, type='int', help='Sequences to sample [Default: %default]')
     parser.add_option('-t', dest='targets', default=None, help='Comma-separated list of targets to analyze in more depth [Default: %default]')
     (options,args) = parser.parse_args()
 
@@ -124,7 +123,7 @@ def main():
         ##############################################
         # print table
         ##############################################
-        table_out = open('%s/table.txt' % options.out_dir, 'w')
+        table_out = open('%s/table%d.txt' % (options.out_dir,ti), 'w')
 
         for kmer in kmer_scores:
             cols = (kmer, len(kmer_scores[kmer]), np.mean(kmer_scores[kmer]), np.std(kmer_scores[kmer])/math.sqrt(len(kmer_scores[kmer])))
