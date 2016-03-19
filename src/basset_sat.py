@@ -186,6 +186,7 @@ def main():
     # plot
     #################################################################
     table_out = open('%s/table.txt' % options.out_dir, 'w')
+    preds_out = open('%s/preds.txt' % options.out_dir, 'w')
 
     rdbu = sns.color_palette("RdBu_r", 10)
 
@@ -214,6 +215,9 @@ def main():
         for ci in plot_targets:
             seq_mod_preds_cell = seq_mod_preds[si,:,:,ci]
             real_pred_cell = get_real_pred(seq_mod_preds_cell, seq)
+
+            # print prediction
+            print >> preds_out, '%s\t%d\t%.3f' % (header, ci, preds_heat[0,ci])
 
             # compute matrices
             norm_matrix = seq_mod_preds_cell - real_pred_cell
@@ -288,6 +292,7 @@ def main():
                 print >> table_out, '\t'.join([str(c) for c in cols])
 
     table_out.close()
+    preds_out.close()
 
 
 def header_filename(header):
