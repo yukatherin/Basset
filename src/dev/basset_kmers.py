@@ -92,8 +92,10 @@ def main():
     else:
         target_labels = ['t%d'%(ti+1) for ti in range(seq_scores.shape[1])]
 
-    if options.targets == None:
+    if options.targets is None:
         options.targets = range(seq_scores.shape[1])
+    else:
+        options.targets = [int(ti) for ti in options.targets.split(',')]
 
 
     #################################################################
@@ -102,6 +104,8 @@ def main():
     kmers_start = (options.seq_len - options.center_nt) / 2
 
     for ti in options.targets:
+        print 'Working on target %d' % ti
+
         ##############################################
         # hash scores by k-mer
         ##############################################
@@ -119,7 +123,6 @@ def main():
 
                 kmer_scores.setdefault(kmer,[]).append(sscore)
 
-
         ##############################################
         # print table
         ##############################################
@@ -130,6 +133,14 @@ def main():
             print >> table_out, '%s  %4d  %6.3f  %6.3f' % cols
 
         table_out.close()
+
+        ##############################################
+        # plot density
+        ##############################################
+        plt.figure()
+        sns.distplot(kmer_scores[kmer])
+        plt.savefig('%s/density%d.pdf' % (options.out_dir,ti))
+        plt.close()
 
 
 
