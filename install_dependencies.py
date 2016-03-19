@@ -53,7 +53,7 @@ def main():
     os.chdir('src')
 
     # install torch-hdf5
-    cmd = 'git clone https://github.com/deepmind/torch-hdf5.git'
+    cmd = 'git clone https://github.com/davek44/torch-hdf5.git'
     subprocess.call(cmd, shell=True)
 
     os.chdir('torch-hdf5')
