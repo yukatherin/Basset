@@ -31,7 +31,6 @@ from dna_io import one_hot_set, vecs2dna
 def main():
     usage = 'usage: %prog [options] <motif> <model_file> <test_hdf5_file>'
     parser = OptionParser(usage)
-    parser.add_option('-a', dest='targets_file', default=None, help='File labelings targets in the second column [Default: %default]')
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5.')
     parser.add_option('-f', dest='filters', default=None, help='Filters to plot length analysis [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='.')
@@ -60,13 +59,9 @@ def main():
     seq_vecs = np.array(test_hdf5_in['test_in'])
     seq_targets = np.array(test_hdf5_in['test_out'])
     seq_headers = np.array(test_hdf5_in['test_headers'])
+    target_labels = np.array(test_hdf5_in['target_labels'])
     test_hdf5_in.close()
 
-    # read target labels
-    if options.targets_file:
-        target_labels = [line.split()[1] for line in open(options.targets_file)]
-    else:
-        target_labels = ['t%d'%(ti+1) for ti in range(seq_targets.shape[1])]
 
     #################################################################
     # sample
