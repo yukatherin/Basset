@@ -15,6 +15,9 @@ import seaborn as sns
 # basset_db.py
 #
 # Study database motifs.
+#
+# Perhaps more meaningful than the mean change might be the higher end of the
+# distribution moving.
 ################################################################################
 
 ################################################################################
