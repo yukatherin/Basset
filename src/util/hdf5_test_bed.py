@@ -16,6 +16,7 @@ import h5py
 def main():
     usage = 'usage: %prog [options] <hdf5_file>'
     parser = OptionParser(usage)
+    parser.add_option('-c', dest='center_nt', type='int', default=None, help='Center nucleotides to consider [Default: %default]')
     (options,args) = parser.parse_args()
 
     if len(args) != 1:
@@ -33,7 +34,16 @@ def main():
         start = int(bed_m.group(2))
         end = int(bed_m.group(3))
         strand = bed_m.group(4)
-        print '%s\t%d\t%d\t.\t1\t%s' % (chrom,start,end,strand)
+
+        if options.center_nt is None:
+            cstart = start
+            cend = end
+        else:
+            mid = (end + start)/2
+            cstart = mid - options.center_nt/2
+            cend = mid + options.center_nt/2
+
+        print '%s\t%d\t%d\t.\t1\t%s' % (chrom,cstart,cend,strand)
 
     hdf5_in.close()
 
