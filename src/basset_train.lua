@@ -132,7 +132,7 @@ convnet.model:training()
 ----------------------------------------------------------------
 local epoch = 1
 local epoch_best = 1
-local valid_best = math.huge
+local acc_best = 0
 local batcher = Batcher:__init(train_seqs, train_targets, convnet.batch_size)
 
 while epoch <= opt.max_epochs and epoch - epoch_best <= opt.stagnant_t do
@@ -172,9 +172,9 @@ while epoch <= opt.max_epochs and epoch - epoch_best <= opt.stagnant_t do
     torch.save(string.format('%s_check.th' % opt.save), convnet)
 
     -- update best
-    if valid_loss < valid_best then
+    if valid_acc_avg > acc_best then
         io.write(" best!")
-        valid_best = valid_loss
+        acc_best = valid_acc_avg
         epoch_best = epoch
 
         -- save best
@@ -193,7 +193,7 @@ end
 if opt.result ~= '' then
     -- print result to file
     local result_out = io.open(opt.result, 'w')
-    result_out:write(valid_best, '\n')
+    result_out:write(acc_best, '\n')
     result_out:close()
 end
 
