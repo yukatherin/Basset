@@ -170,8 +170,7 @@ def main():
     #################################################################
     # filter diffs
     #################################################################
-    '''
-    for l in range(3):
+    for l in range(1):
         motif_filters_df = pd.DataFrame(reprs_diffs[l], index=db_motifs.keys())
 
         # plot heat map
@@ -199,7 +198,6 @@ def main():
             mi += 1
 
         table_out.close()
-    '''
 
 
 ################################################################################
