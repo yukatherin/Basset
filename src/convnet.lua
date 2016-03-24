@@ -323,16 +323,23 @@ function ConvNet:get_nonlinears(pool)
     local ni = 1
     local mi = 1
     local conv_name
+    local conv_layers = self.conv_layers
     if pool then
         conv_name = 'nn.SpatialMaxPooling'
+        if self.pool_width[1] == 1 then
+            conv_layers = self.conv_layers - 1
+        end
     else
         conv_name = relu_name
     end
 
     -- add convolutions
-    for c = 1,self.conv_layers do
-        while torch.typename(self.model.modules[mi]) ~= conv_name do
+    for c = 1,conv_layers do
+        while mi <= #self.model.modules and torch.typename(self.model.modules[mi]) ~= conv_name do
             mi = mi + 1
+        end
+        if torch.typename(self.model.modules[mi]) ~= conv_name then
+            error("Cannot find convolution modules " .. conv_name)
         end
         nl_modules[ni] = self.model.modules[mi]
         ni = ni + 1
