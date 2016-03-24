@@ -50,7 +50,7 @@ local seq_mid = math.floor(seq_len/2 - #opt.motif/2) - 1
 -- pre-predict
 ----------------------------------------------------------------
 -- local pre_preds = convnet:predict(test_seqs, opt.batch_size,
-local pre_preds, pre_scores, pre_reprs = convnet:predict_reprs(test_seqs, opt.batch_size, true, opt.pool, 1)
+local pre_preds, pre_scores, pre_reprs = convnet:predict_reprs(test_seqs, opt.batch_size, true, opt.pool, {1})
 
 ----------------------------------------------------------------
 -- modify and re-predict
@@ -85,7 +85,7 @@ for si = 1,num_seqs do
 end
 
 -- predict
-local preds, scores, reprs = convnet:predict_repr(test_seqs, opt.batch_size, true, opt.pool, 1)
+local preds, scores, reprs = convnet:predict_reprs(test_seqs, opt.batch_size, true, opt.pool, {1})
 
 ----------------------------------------------------------------
 -- dump to file, load into python
