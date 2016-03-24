@@ -912,7 +912,7 @@ function ConvNet:test(Xf, Yf, batch_size, rc_avg)
     local batcher = Batcher:__init(Xf, Yf, batch_size)
 
     -- track predictions across batches
-    local preds = torch.Tensor(batcher.num_seqs, self.num_targets)
+    local preds = torch.FloatTensor(batcher.num_seqs, self.num_targets)
     local pi = 1
 
     -- get first batch
@@ -1049,7 +1049,7 @@ function ConvNet:test_mc(Xf, Yf, batch_size)
     local batcher = Batcher:__init(Xf, Yf, batch_size)
 
     -- track predictions across batches
-    local preds = torch.Tensor(batcher.num_seqs, self.num_targets)
+    local preds = torch.FloatTensor(batcher.num_seqs, self.num_targets)
     local pi = 1
 
     -- get first batch
