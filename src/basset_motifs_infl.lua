@@ -82,7 +82,7 @@ while Xb ~= nil do
     -- predict and collect statistics
     --------------------------------------------------
     local preds = convnet:predict(Xb, opt.batch_size, true)
-    local loss = convnet.criterion(preds, Yb)
+    local loss = convnet.criterion(preds:double(), Yb)
 
 	-- compute pred means for target deltas
 	local preds_means = preds:mean(1)
@@ -146,7 +146,7 @@ while Xb ~= nil do
             zfinal_means = zfinal_output:mean(1):reshape(num_targets)
 
 			-- re-compute loss
-			zloss = convnet.criterion:forward(zpreds, Yb)
+			zloss = convnet.criterion:forward(zpreds:double(), Yb)
 
 			-- reset hidden unit
 			conv_module.output = actual_rep:reshape(batch_size, num_filters, 1, seq_len)
