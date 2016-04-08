@@ -1,8 +1,5 @@
 #!/usr/bin/env th
 
-cuda = true
-require 'convnet'
-
 ----------------------------------------------------------------
 -- parse arguments
 ----------------------------------------------------------------
@@ -14,7 +11,13 @@ cmd:text('Arguments')
 cmd:argument('model_file')
 cmd:argument('out_file')
 cmd:text()
+cmd:option('-cudnn', false, 'Model uses cuDNN')
+cmd:text()
 opt = cmd:parse(arg)
+
+cuda = true
+cudnn = opt.cudnn
+require 'convnet'
 
 ----------------------------------------------------------------
 
