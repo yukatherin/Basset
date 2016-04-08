@@ -26,6 +26,7 @@ import seaborn as sns
 def main():
     usage = 'usage: %prog [options] <db_file> <model_file> <test_hdf5_file>'
     parser = OptionParser(usage)
+    parser.add_option('-a', dest='add_motif', default=None, help='Pre-inserted additional upstream motif')
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5.')
     parser.add_option('-m', dest='motifs_study', default='', help='Comma-separated list of motifs to study in more detail [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='.')
@@ -121,7 +122,11 @@ def main():
     #################################################################
     if options.model_hdf5_file is None:
         options.model_hdf5_file = '%s/model_out.h5' % options.out_dir
-        torch_cmd = 'basset_db_predict.lua %s %s %s %s' % (motifs_hdf5_file, model_file, test_hdf5_file, options.model_hdf5_file)
+        add_str = ''
+        if options.add_motif is not None:
+            add_str = '-add_motif %s' % options.add_motif
+
+        torch_cmd = 'basset_db_predict.lua %s %s %s %s %s' % (add_str, motifs_hdf5_file, model_file, test_hdf5_file, options.model_hdf5_file)
         print torch_cmd
         subprocess.call(torch_cmd, shell=True)
 
@@ -135,6 +140,7 @@ def main():
         reprs_diffs.append(np.array(model_hdf5_in['reprs%d'%l]))
         l += 1
     model_hdf5_in.close()
+
 
     #################################################################
     # score diffs
@@ -156,7 +162,7 @@ def main():
     plt.close()
 
     # print table
-    table_out = open('%s/table.txt' % options.out_dir, 'w')
+    table_out = open('%s/table_scores.txt' % options.out_dir, 'w')
 
     mi = 0
     for protein in db_motifs:
@@ -166,6 +172,7 @@ def main():
         mi += 1
 
     table_out.close()
+
 
     #################################################################
     # filter diffs

@@ -19,6 +19,7 @@ cmd:argument('data_file')
 cmd:argument('out_file')
 cmd:text()
 cmd:text('Options:')
+cmd:option('-add_motif', '', 'Additional motif to pre-insert')
 cmd:option('-batch_size', 256, 'Maximum batch size')
 cmd:option('-cuda', false, 'Run on GPGPU')
 opt = cmd:parse(arg)
@@ -50,6 +51,33 @@ local motifs = motifs_open:all()
 local num_motifs = 0
 for mid, _ in pairs(motifs) do
     num_motifs = num_motifs + 1
+end
+
+----------------------------------------------------------------
+-- write in the additional motif
+----------------------------------------------------------------
+if #opt.add_motif > 0 then
+    seq_add = seq_mid - 2*(#opt.add_motif)
+    for si = 1,num_seqs do
+        for pi = 1,#opt.add_motif do
+            -- determine nt index
+            if opt.add_motif:sub(pi,pi) == 'A' then
+                nt = 1
+            elseif opt.add_motif:sub(pi,pi) == 'C' then
+                nt = 2
+            elseif opt.add_motif:sub(pi,pi) == 'G' then
+                nt = 3
+            else
+                nt = 4
+            end
+
+             -- set the nt
+            for ni = 1,4 do
+                test_seqs[si][ni][1][seq_add+pi] = 0
+            end
+            test_seqs[si][nt][1][seq_add+pi] = 1
+        end
+    end
 end
 
 ----------------------------------------------------------------
