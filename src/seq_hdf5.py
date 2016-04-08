@@ -30,6 +30,7 @@ def main():
     parser.add_option('-s', dest='random_seed', default=1, type='int', help='numpy.random seed [Default: %default]')
     parser.add_option('-t', dest='test_pct', default=0, type='float', help='Test % [Default: %default]')
     parser.add_option('-v', dest='valid_pct', default=0, type='float', help='Validation % [Default: %default]')
+    parser.add_option('--vt', dest='valid_test', default=False, action='store_true', help='Use validation ')
     (options,args) = parser.parse_args()
 
     if len(args) != 3:
@@ -103,7 +104,7 @@ def main():
     i = 0
     train_seqs, train_targets = seqs[i:i+train_count,:], targets[i:i+train_count,:]
     i += train_count
-    valid_seqs, valid_targets = seqs[i:i+valid_count,:], targets[i:i+valid_count,:]
+    valid_seqs, valid_targets, valid_headers = seqs[i:i+valid_count,:], targets[i:i+valid_count,:], headers[i:i+valid_count]
     i += valid_count
     test_seqs, test_targets, test_headers = seqs[i:i+test_count,:], targets[i:i+test_count,:], headers[i:i+test_count]
 
@@ -134,6 +135,10 @@ def main():
         h5f.create_dataset('test_in', data=test_seqs)
         h5f.create_dataset('test_out', data=test_targets)
         h5f.create_dataset('test_headers', data=test_headers)
+    elif options.valid_test:
+        h5f.create_dataset('test_in', data=valid_seqs)
+        h5f.create_dataset('test_out', data=valid_targets)
+        h5f.create_dataset('test_headers', data=valid_headers)
 
     if options.add_features_file:
         h5f.create_dataset('add_labels', data=list(df_add.columns))
@@ -144,6 +149,8 @@ def main():
             h5f.create_dataset('valid_add', data=valid_add.as_matrix())
         if test_count > 0:
             h5f.create_dataset('test_add', data=test_add.as_matrix())
+        elif options.valid_test:
+            h5f.create_dataset('test_add', data=valid_add.as_matrix())
 
     h5f.close()
 
