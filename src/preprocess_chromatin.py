@@ -5,6 +5,7 @@ import subprocess
 import sys
 
 import numpy as np
+import pyBigWig
 
 ################################################################################
 # preprocess_chromatin.py
@@ -21,6 +22,7 @@ def main():
     parser = OptionParser(usage)
     parser.add_option('-b', dest='bin_size', default=None, type='int', help='Bin size to take the mean track value [Default: %default]')
     parser.add_option('-f', dest='function', default='mean', help='Function to compute in each bin [Default: %default]')
+    parser.add_option('-l', dest='log2', default=False, action='store_true', help='Take log2 [Default: %default')
     parser.add_option('-n', dest='normalize', default=False, action='store_true', help='Normalize ')
     parser.add_option('-s', dest='span', default=200, type='int', help='Span of sequence to consider around each site Default: %default]')
     (options,args) = parser.parse_args()
@@ -41,17 +43,22 @@ def main():
     #################################################################
     # setup
     #################################################################
-    # count sites
-    num_sites = 0
-    for line in open(sites_bed_file):
-        num_sites += 1
-
-    # count bins
-    num_bins = options.span / options.bin_size
-
     # determine span on each side
     span_left = int(round(options.span/2.0))
     span_right = options.span/2
+
+    # read in sites
+    sites = []
+    for line in open(sites_bed_file):
+        a = line.split()
+        start = int(a[1])
+        end = int(a[2])
+        mid = (start + end)/2
+
+        sites.append(Site(a[0], mid-span_left, mid+span_right))
+
+    # count bins
+    num_bins = options.span / options.bin_size
 
     # get wig files and labels
     target_wigs = OrderedDict()
@@ -71,56 +78,47 @@ def main():
                 bin_mid += options.bin_size
 
     # initialize features array
-    site_features = np.zeros((num_sites,len(feature_labels)), dtype='float16')
+    site_features = np.zeros((len(sites),len(feature_labels)), dtype='float16')
 
     #################################################################
     # process wigs
     #################################################################
     wi = 0
-    for line in open(sample_wigs_file):
-        a = line.split()
-        sample, wig_file = a[0], a[1]
+    for sample in target_wigs:
+        wig_file = target_wigs[sample]
+        print wig_file
 
-        cmd = 'bwtool matrix %d:%d %s %s /dev/stdout' % (span_left, span_right, sites_bed_file, wig_file)
-        print cmd
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+        # open wig
+        wig_in = pyBigWig.open(wig_file)
 
-        si = 0
-        for line in p.stdout:
-            # fix nan's
-            line = line.replace('NA', 'nan')
+        for si in range(len(sites)):
+            s = sites[si]
 
-            # convert to floats
-            span_values = np.array([float(v) for v in line.split()])
-
-            # reshape into bins
-            bin_values = span_values.reshape((num_bins,-1))
-
-            # compute function in bins
-            if options.function == 'max':
-                bin_sum = np.nanmax(bin_values, axis=1)
-            elif options.function == 'mean':
-                bin_sum = np.nanmean(bin_values, axis=1, dtype='float64').astype('float16')
-            else:
-                print >> sys.stderr, 'Unrecognized function %s' % options.function
-                exit()
+            # pull stats from wig
+            bin_stats = wig_in.stats(s.chrom, s.start, s.end, type=options.function, nBins=num_bins)
 
             # copy into primary data structure
             for bi in range(num_bins):
-                site_features[si][wi+bi] = bin_sum[bi]
-
-            si += 1
-
-        p.communicate()
+                site_features[si,wi+bi] = bin_stats[bi]
 
         wi += num_bins
 
     #################################################################
     # normalize
     #################################################################
+    # replace nan with zero
+    site_features = np.nan_to_num(site_features)
+
+    # acknowledge the max of float16
+    site_features = site_features.clip(0, 65504.0)
+
+    if options.log2:
+        site_features = np.log2(site_features+1)
+
+    # normalize
     if options.normalize:
-        site_features = site_features - site_features.mean(axis=0)
-        site_features = site_features / site_features.std(axis=0)
+        site_features = site_features - np.nanmean(site_features, axis=0)
+        site_features = site_features / np.nanstd(site_features, axis=0)
 
     #################################################################
     # output
@@ -140,6 +138,12 @@ def main():
 
     sv_out.close()
 
+
+class Site:
+    def __init__(self, chrom, start, end):
+        self.chrom = chrom
+        self.start = start
+        self.end = end
 
 ################################################################################
 # __main__
