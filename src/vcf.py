@@ -42,6 +42,9 @@ def snps_seq1(snps, genome_fasta, seq_len):
     # initialize one hot coded vector list
     seq_vecs_list = []
 
+    # save successful SNPs
+    seq_snps = []
+
     # save sequence strings, too
     seqs = []
 
@@ -54,13 +57,21 @@ def snps_seq1(snps, genome_fasta, seq_len):
         seq_end = snp.pos + right_len + len(snp.ref_allele) - snp.longest_alt()
 
         # extract sequence as BED style
-        seq = genome.fetch(snp.chrom, seq_start-1, seq_end).upper()
+        if seq_start < 0:
+            seq = 'N'*(-seq_start) + genome.fetch(snp.chrom, 0, seq_end).upper()
+        else:
+            seq = genome.fetch(snp.chrom, seq_start-1, seq_end).upper()
+
+        if len(seq) < seq_end - seq_start:
+            seq += 'N'*(seq_end-seq_start-len(seq))
 
         # verify that ref allele matches ref sequence
         seq_ref = seq[left_len:left_len+len(snp.ref_allele)]
         if seq_ref != snp.ref_allele:
             print >> sys.stderr, 'WARNING: skipping %s because reference allele does not match reference genome: %s vs %s' % (snp.rsid, snp.ref_allele, seq_ref)
             continue
+        else:
+            seq_snps.append(snp)
 
         # one hot code ref allele
         seq_vecs_list.append(dna_one_hot(seq[:seq_len], seq_len))
@@ -83,7 +94,7 @@ def snps_seq1(snps, genome_fasta, seq_len):
     # stack
     seq_vecs = np.vstack(seq_vecs_list)
 
-    return seq_vecs, seqs, seq_headers
+    return seq_vecs, seqs, seq_headers, seq_snps
 
 
 def vcf_snps(vcf_file, index_snp=False, score=False):
@@ -140,3 +151,6 @@ class SNP:
     def longest_alt(self):
         ''' Return the longest alt allele. '''
         return max([len(al) for al in self.alt_alleles])
+
+    def __str__(self):
+        return 'SNP(%s, %s:%d, %s/%s)' % (self.rsid, self.chrom, self.pos, self.ref_allele, ','.join(self.alt_alleles))
