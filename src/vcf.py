@@ -68,7 +68,7 @@ def snps_seq1(snps, genome_fasta, seq_len):
         # verify that ref allele matches ref sequence
         seq_ref = seq[left_len:left_len+len(snp.ref_allele)]
         if seq_ref != snp.ref_allele:
-            print >> sys.stderr, 'WARNING: skipping %s because reference allele does not match reference genome: %s vs %s' % (snp.rsid, snp.ref_allele, seq_ref)
+            print >> sys.stderr, 'ERROR: %s - reference allele does not match reference genome: %s vs %s' % (snp.rsid, snp.ref_allele, seq_ref)
             continue
         else:
             seq_snps.append(snp)
