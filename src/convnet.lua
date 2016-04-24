@@ -65,6 +65,7 @@ function ConvNet:adjust_final(num_targets, target_type)
 
         -- mean-squared error loss
         self.criterion = nn.MSECriterion()
+
     else
         -- mean-squared error loss
         self.criterion = nn.MSECriterion()
@@ -812,6 +813,7 @@ function ConvNet:train_epoch(batcher)
     local total_loss = 0
 
     -- collect garbage occasionaly
+    collectgarbage()
     local cgi = 0
 
     -- get first batch
@@ -991,8 +993,9 @@ function ConvNet:test(Xf, Yf, batch_size, rc_avg)
     else
         -- compute R2
         local R2s = variance_explained(Yf, preds)
+        local cors = spearmanr(Yf, preds)
 
-        return avg_loss, R2s
+        return avg_loss, R2s, cors
     end
 end
 
@@ -1032,11 +1035,9 @@ end
 --
 -- Predict targets for X and compare to Y.
 ----------------------------------------------------------------
-function ConvNet:test_mc(Xf, Yf, batch_size)
+function ConvNet:test_mc(Xf, Yf, mc_n, batch_size)
     -- requires stochasticity
     self.model:training()
-
-    local mcmc_iters = 100
 
     -- track the loss across batches
     local loss = 0
@@ -1065,11 +1066,11 @@ function ConvNet:test_mc(Xf, Yf, batch_size)
 
         -- predict
         local preds_batch = self.model:forward(inputs)
-        for mi = 2,mcmc_iters do
+        for mi = 2,mc_n do
             local preds_batch_mc = self.model:forward(inputs)
             preds_batch = preds_batch + preds_batch_mc
         end
-        preds_batch = preds_batch / mcmc_iters
+        preds_batch = preds_batch / mc_n
 
         -- accumulate loss
         loss = loss + self.criterion:forward(preds_batch, targets)
