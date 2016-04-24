@@ -11,19 +11,55 @@ function variance_explained(Yf, preds)
     for yi = 1,Ydim do
         -- read Yi from file
         local Yi = Yf:partial({1,num_seqs},{yi,yi}):squeeze()
+        Yi = Yi:float()
 
         -- subset to preds i
         local preds_i = preds[{{},yi}]
 
         -- compute variances
-        local Yi_var = Yi:var()
-        local preds_var = preds_i:var()
+        local Yi_var = (Yi - Yi:mean()):var()
+        local preds_var = (Yi - preds_i):var()
 
         -- save
         R2s[yi] = 1.0 - preds_var/Yi_var
     end
 
     return R2s
+end
+
+function spearmanr(Yf, preds)
+    local num_seqs = Yf:dataspaceSize()[1]
+    local Ydim = Yf:dataspaceSize()[2]
+
+    local n_denom = num_seqs*(num_seqs^2 - 1)
+    local cors = torch.Tensor(Ydim)
+
+    for yi = 1,Ydim do
+        -- read Yi from file
+        local Yi = Yf:partial({1,num_seqs},{yi,yi}):squeeze()
+
+        -- subset to preds i
+        local preds_i = preds[{{},yi}]
+
+        -- argsort
+        local _, Y_si = Yi:sort()
+        local _, preds_si = preds_i:sort()
+
+        -- assign ranks
+        local Y_ranks = Y_si:clone()
+        local preds_ranks = preds_si:clone()
+        for ri = 1,num_seqs do
+            Y_ranks[Y_si[ri]] = ri
+            preds_ranks[preds_si[ri]] = ri
+        end
+
+        local d2_sum = (Y_ranks - preds_ranks):float():pow(2):sum()
+
+        -- save
+        cors[yi] = 1.0 - 6.0*d2_sum/n_denom
+    end
+
+    return cors
 end
 
 -- auxiliary method that quickly simulates the ROC curve computation
