@@ -133,6 +133,8 @@ convnet.model:training()
 local epoch = 1
 local epoch_best = 1
 local acc_best = 0
+local valid_loss
+local valid_acc
 local batcher = Batcher:__init(train_seqs, train_targets, convnet.batch_size)
 
 while epoch <= opt.max_epochs and epoch - epoch_best <= opt.stagnant_t do
@@ -143,18 +145,25 @@ while epoch <= opt.max_epochs and epoch - epoch_best <= opt.stagnant_t do
     local train_loss = convnet:train_epoch(batcher)
     io.write(string.format("train loss = %7.3f, ", train_loss))
 
-    -- change to evaluate mode
-    convnet.model:evaluate()
+    if job.mc_n ~= nil and job.mc_n > 1 then
+        -- measure accuracy on a test set
+        valid_loss, valid_acc, valid_cor = convnet:test_mc(valid_seqs, valid_targets, job.mc_n)
 
-    -- measure accuracy on a test set
-    local valid_loss, valid_acc = convnet:test(valid_seqs, valid_targets)
+    else
+        -- change to evaluate mode
+        convnet.model:evaluate()
+
+        -- measure accuracy on a test set
+        valid_loss, valid_acc, valid_cor = convnet:test(valid_seqs, valid_targets)
+    end
 
     local valid_acc_avg = torch.mean(valid_acc)
     local acc_str
     if convnet.target_type == "binary" then
         acc_str = string.format("AUC = %.4f", valid_acc_avg)
     else
-        acc_str = string.format("R2 = %.4f", valid_acc_avg)
+        local valid_cor_avg = torch.mean(valid_cor)
+        acc_str = string.format("R2 = %.4f, rho = %.4f", valid_acc_avg, valid_cor_avg)
     end
 
     -- print w/ time
