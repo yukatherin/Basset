@@ -23,7 +23,7 @@ def main():
     parser.add_option('-b', dest='bin_size', default=None, type='int', help='Bin size to take the mean track value [Default: %default]')
     parser.add_option('-f', dest='function', default='mean', help='Function to compute in each bin [Default: %default]')
     parser.add_option('-l', dest='log2', default=False, action='store_true', help='Take log2 [Default: %default')
-    parser.add_option('-n', dest='normalize', default=False, action='store_true', help='Normalize ')
+    parser.add_option('-n', dest='normalize', default=False, action='store_true', help='Normalize [Default: %default]')
     parser.add_option('-s', dest='span', default=200, type='int', help='Span of sequence to consider around each site Default: %default]')
     (options,args) = parser.parse_args()
 
