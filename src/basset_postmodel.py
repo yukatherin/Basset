@@ -10,7 +10,7 @@ import numpy as np
 import seaborn as sns
 from sklearn.externals import joblib
 from sklearn.linear_model import BayesianRidge, LogisticRegression
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import precision_recall_curve, roc_auc_score, roc_curve
 
 ################################################################################
 # basset_postmodel.py
@@ -140,6 +140,22 @@ def main():
         acc_out = open('%s/auc.txt' % options.out_dir, 'w')
         print >> acc_out, roc_auc_score(test_y, test_preds)
         acc_out.close()
+
+        # compute and print ROC curve
+        fpr, tpr, thresholds = roc_curve(test_y, test_preds)
+
+        roc_out = open('%s/roc.txt' % options.out_dir, 'w')
+        for i in range(len(fpr)):
+            print >> roc_out, '%f\t%f\t%f' % (fpr[i], tpr[i], thresholds[i])
+        roc_out.close()
+
+        # compute and print precision-recall curve
+        precision, recall, thresholds = precision_recall_curve(test_y, test_preds)
+
+        prc_out = open('%s/prc.txt' % options.out_dir, 'w')
+        for i in range(len(precision)):
+            print >> prc_out, '%f\t%f' % (precision[i], recall[i])
+        prc_out.close()
 
     # save model
     joblib.dump(model, '%s/model.pkl' % options.out_dir)
