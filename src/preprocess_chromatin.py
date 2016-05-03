@@ -21,9 +21,12 @@ def main():
     usage = 'usage: %prog [options] <sites_bed> <sample_wigs_file> <out_file>'
     parser = OptionParser(usage)
     parser.add_option('-b', dest='bin_size', default=None, type='int', help='Bin size to take the mean track value [Default: %default]')
+    parser.add_option('--clip_min', dest='clip_min', default=None, type='float', help='Clip the distribution minimums at this proportion. [Default: %default; Suggested: 0.05]')
+    parser.add_option('--clip_max', dest='clip_max', default=None, type='float', help='Clip the distribution maximums at this proportion [Default: %default; Suggested: .001]')
     parser.add_option('-f', dest='function', default='mean', help='Function to compute in each bin [Default: %default]')
     parser.add_option('-l', dest='log2', default=False, action='store_true', help='Take log2 [Default: %default')
     parser.add_option('-n', dest='normalize', default=False, action='store_true', help='Normalize [Default: %default]')
+    parser.add_option('-p', dest='pseudocount', default=0, type='float', help='Pseudocount added before transformations [Default: %default]')
     parser.add_option('-s', dest='span', default=200, type='int', help='Span of sequence to consider around each site Default: %default]')
     (options,args) = parser.parse_args()
 
@@ -109,16 +112,30 @@ def main():
     # replace nan with zero
     site_features = np.nan_to_num(site_features)
 
+    # add pseudocount
+    if options.pseudocount:
+        site_features += options.pseudocount
+
     # acknowledge the max of float16
     site_features = site_features.clip(0, 65504.0)
 
     if options.log2:
-        site_features = np.log2(site_features+1)
+        site_features = np.log2(site_features)
 
     # normalize
     if options.normalize:
         site_features = site_features - np.nanmean(site_features, axis=0)
         site_features = site_features / np.nanstd(site_features, axis=0)
+
+    # clip minimum
+    if options.clip_min is not None:
+        wmins = np.percentile(site_features, 100*options.clip_min, axis=0)
+        site_features = site_features.clip(min=wmins)
+
+    # clip maximum
+    if options.clip_max is not None:
+        wmaxs = np.percentile(site_features, 100*(1-options.clip_max), axis=0)
+        site_features = site_features.clip(max=wmaxs)
 
     #################################################################
     # output
