@@ -1,4 +1,4 @@
-<img src="docs/basset_image.png" width="48">
+<img src="docs/basset_image.png" width="200">
 
 # Basset
 #### Deep convolutional neural networks for DNA sequence analysis.
