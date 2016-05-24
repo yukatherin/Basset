@@ -25,9 +25,11 @@ Basset relies on the environmental variable BASSETDIR to orient itself. In your 
 To make the code available for use in any directory, also write
 ```
     export PATH=$BASSETDIR/src:$PATH
-    export LUAPATH=$BASSETDIR/src:$LUAPATH
     export PYTHONPATH=$BASSETDIR/src:$PYTHONPATH
+    export LUA_PATH="$BASSETDIR/src/?.lua;$LUA_PATH"
 ```
+
+You also need to add $BASSETDIR/src/?.lua to your LUA_PATH variable. This one is some sort of string, so export doesn't work. I just copy paste it in there. If you know
 
 To download and install the remaining dependencies, run
 ```
