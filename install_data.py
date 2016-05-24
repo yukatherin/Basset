@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from optparse import OptionParser
+from distutils import spawn
 import glob
 import os
 import subprocess
@@ -21,6 +22,14 @@ def main():
     parser.add_option('-r', dest='restart', default=False, action='store_true', help='Do not overwrite existing files, as if restarting an aborted installation [Default: %default]')
     (options,args) = parser.parse_args()
 
+    if spawn.find_executable('wget').find('wget') != -1:
+        dl_cmd = 'wget'
+    elif spawn.find_executable('curl').find('curl') != -1:
+        dl_cmd = 'curl -L -O'
+    else:
+        print >> sys.stderr, 'Cannot find wget or curl to download files'
+        exit(1)
+
     os.chdir('data')
 
     ############################################################
@@ -31,7 +40,7 @@ def main():
     if not options.restart or not os.path.isfile('pretrained_model.th'):
         print >> sys.stderr, 'Downloading pre-trained model.'
 
-        cmd = 'wget https://www.dropbox.com/s/rguytuztemctkf8/pretrained_model.th.gz'
+        cmd = '%s https://www.dropbox.com/s/rguytuztemctkf8/pretrained_model.th.gz' % dl_cmd
         subprocess.call(cmd, shell=True)
 
         cmd = 'gunzip pretrained_model.th.gz'
@@ -49,7 +58,7 @@ def main():
         print >> sys.stderr, 'Downloading hg19 FASTA from UCSC. If you already have it, CTL-C to place a sym link in the genomes directory named hg19.fa'
 
         # download hg19
-        cmd = 'wget ftp://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/chromFa.tar.gz -O chromFa.tar.gz'
+        cmd = '%s ftp://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/chromFa.tar.gz -O chromFa.tar.gz' % dl_cmd
         subprocess.call(cmd, shell=True)
 
         # un-tar
@@ -76,12 +85,12 @@ def main():
     # download and prepare public data
     ############################################################
     if not options.restart or not os.path.isfile('encode_roadmap.h5'):
-        cmd = 'wget https://www.dropbox.com/s/h1cqokbr8vjj5wc/encode_roadmap.bed.gz'
+        cmd = '%s https://www.dropbox.com/s/h1cqokbr8vjj5wc/encode_roadmap.bed.gz' % dl_cmd
         subprocess.call(cmd, shell=True)
         cmd = 'gunzip encode_roadmap.bed.gz'
         subprocess.call(cmd, shell=True)
 
-        cmd = 'wget https://www.dropbox.com/s/8g3kc0ai9ir5d15/encode_roadmap_act.txt.gz'
+        cmd = '%s https://www.dropbox.com/s/8g3kc0ai9ir5d15/encode_roadmap_act.txt.gz' % dl_cmd
         subprocess.call(cmd, shell=True)
         cmd = 'gunzip encode_roadmap_act.txt.gz'
         subprocess.call(cmd, shell=True)
