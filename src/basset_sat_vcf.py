@@ -32,7 +32,7 @@ def main():
     parser.add_option('-m', dest='min_limit', default=0.1, type='float', help='Minimum heatmap limit [Default: %default]')
     parser.add_option('-n', dest='center_nt', default=200, type='int', help='Nt around the SNP to mutate and plot in the heatmap [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='heat', help='Output directory [Default: %default]')
-    parser.add_option('-t', dest='targets', default='0', help='Comma-separated list of target indexes to plot (or -1 for all) [Default: %default]')
+    parser.add_option('-t', dest='targets', default='-1', help='Comma-separated list of target indexes to plot (or -1 for all) [Default: %default]')
     (options,args) = parser.parse_args()
 
     if len(args) != 2:
@@ -51,7 +51,7 @@ def main():
     snps = vcf.vcf_snps(vcf_file)
 
     # get one hot coded input sequences
-    seqs_1hot, seqs, seq_headers = vcf.snps_seq1(snps, options.genome_fasta, options.seq_len)
+    seqs_1hot, seqs, seq_headers, snps = vcf.snps_seq1(snps, options.genome_fasta, options.seq_len)
 
     # reshape sequences for torch
     seqs_1hot = seqs_1hot.reshape((seqs_1hot.shape[0],4,1,seqs_1hot.shape[1]/4))

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from optparse import OptionParser
-import os, subprocess
+import pdb, os, subprocess
 
 import h5py
 import matplotlib.pyplot as plt
@@ -50,17 +50,16 @@ def main():
     # load SNPs
     snps = vcf.vcf_snps(vcf_file, options.index_snp, options.score)
 
-    if options.model_hdf5_file is None:
-        # get one hot coded input sequences
-        seq_vecs, seqs, seq_headers = vcf.snps_seq1(snps, options.genome_fasta, options.seq_len)
+    # get one hot coded input sequences
+    seq_vecs, seqs, seq_headers, snps = vcf.snps_seq1(snps, options.genome_fasta, options.seq_len)
 
-        # reshape sequences for torch
-        seq_vecs = seq_vecs.reshape((seq_vecs.shape[0],4,1,seq_vecs.shape[1]/4))
+    # reshape sequences for torch
+    seq_vecs = seq_vecs.reshape((seq_vecs.shape[0],4,1,seq_vecs.shape[1]/4))
 
-        # write to HDF5
-        h5f = h5py.File('%s/model_in.h5'%options.out_dir, 'w')
-        h5f.create_dataset('test_in', data=seq_vecs)
-        h5f.close()
+    # write to HDF5
+    h5f = h5py.File('%s/model_in.h5'%options.out_dir, 'w')
+    h5f.create_dataset('test_in', data=seq_vecs)
+    h5f.close()
 
 
     #################################################################
@@ -170,34 +169,25 @@ def main():
             vlim = max(options.min_limit, sad_matrix.max())
             score_mat = np.reshape(np.array(sad_scores[ii]), (-1, 1))
 
-            if options.targets_file is None:
-                # plot heatmap
-                plt.figure(figsize=(20, 0.5*sad_matrix.shape[0]))
+            # plot heatmap
+            plt.figure(figsize=(20, 0.5 + 0.5*sad_matrix.shape[0]))
 
+            if options.score:
                 # lay out scores
                 cols = 12
                 ax_score = plt.subplot2grid((1,cols), (0,0))
                 ax_sad = plt.subplot2grid((1,cols), (0,1), colspan=(cols-1))
 
                 sns.heatmap(score_mat, xticklabels=False, yticklabels=False, vmin=0, vmax=1, cmap='Reds', cbar=False, ax=ax_score)
-                sns.heatmap(sad_matrix, xticklabels=False, yticklabels=sad_labels[ii], vmin=0, vmax=vlim, ax=ax_sad)
-
             else:
-                # plot heatmap
-                plt.figure(figsize=(20, 0.5 + 0.5*sad_matrix.shape[0]))
+                ax_sad = plt.gca()
 
-                # lay out scores
-                cols = 12
-                ax_score = plt.subplot2grid((1,cols), (0,0))
-                ax_sad = plt.subplot2grid((1,cols), (0,1), colspan=(cols-1))
+            sns.heatmap(sad_matrix, xticklabels=target_labels, yticklabels=sad_labels[ii], vmin=0, vmax=vlim, ax=ax_sad)
 
-                sns.heatmap(score_mat, xticklabels=False, yticklabels=False, vmin=0, vmax=1, cmap='Reds', cbar=False, ax=ax_score)
-                sns.heatmap(sad_matrix, xticklabels=target_labels, yticklabels=sad_labels[ii], vmin=0, vmax=vlim, ax=ax_sad)
-
-                for tick in ax_sad.get_xticklabels():
-                    tick.set_rotation(-45)
-                    tick.set_horizontalalignment('left')
-                    tick.set_fontsize(5)
+            for tick in ax_sad.get_xticklabels():
+                tick.set_rotation(-45)
+                tick.set_horizontalalignment('left')
+                tick.set_fontsize(5)
 
             plt.tight_layout()
             if ii == '.':
@@ -213,3 +203,4 @@ def main():
 ################################################################################
 if __name__ == '__main__':
     main()
+    #pdb.runcall(main)
