@@ -563,25 +563,26 @@ def filter_possum(param_matrix, motif_id, possum_file, trim_filters=False, mult=
     trim_t = 0.3
     if trim_filters:
         # trim PWM of uninformative prefix
-        while np.max(param_matrix[:,trim_start]) - np.min(param_matrix[:,trim_start]) < trim_t:
+        while trim_start < param_matrix.shape[1] and np.max(param_matrix[:,trim_start]) - np.min(param_matrix[:,trim_start]) < trim_t:
             trim_start += 1
 
         # trim PWM of uninformative suffix
-        while np.max(param_matrix[:,trim_end]) - np.min(param_matrix[:,trim_end]) < trim_t:
+        while trim_end >= 0 and np.max(param_matrix[:,trim_end]) - np.min(param_matrix[:,trim_end]) < trim_t:
             trim_end -= 1
 
-    possum_out = open(possum_file, 'w')
-    print >> possum_out, 'BEGIN GROUP'
-    print >> possum_out, 'BEGIN FLOAT'
-    print >> possum_out, 'ID %s' % motif_id
-    print >> possum_out, 'AP DNA'
-    print >> possum_out, 'LE %d' % (trim_end+1-trim_start)
-    for ci in range(trim_start,trim_end+1):
-        print >> possum_out, 'MA %s' % ' '.join(['%.2f'%(mult*n) for n in param_matrix[:,ci]])
-    print >> possum_out, 'END'
-    print >> possum_out, 'END'
+    if trim_start < trim_end:
+        possum_out = open(possum_file, 'w')
+        print >> possum_out, 'BEGIN GROUP'
+        print >> possum_out, 'BEGIN FLOAT'
+        print >> possum_out, 'ID %s' % motif_id
+        print >> possum_out, 'AP DNA'
+        print >> possum_out, 'LE %d' % (trim_end+1-trim_start)
+        for ci in range(trim_start,trim_end+1):
+            print >> possum_out, 'MA %s' % ' '.join(['%.2f'%(mult*n) for n in param_matrix[:,ci]])
+        print >> possum_out, 'END'
+        print >> possum_out, 'END'
 
-    possum_out.close()
+        possum_out.close()
 
 
 ################################################################################
