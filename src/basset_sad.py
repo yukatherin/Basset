@@ -25,7 +25,9 @@ def main():
     parser = OptionParser(usage)
     parser.add_option('-c', dest='csv', default=False, action='store_true', help='Print table as CSV [Default: %default]')
     parser.add_option('--cuda', dest='cuda', default=False, action='store_true', help='Predict on the GPU [Default: %default]')
+    parser.add_option('--cudnn', dest='cudnn', default=False, action='store_true', help='Predict on the GPU w/ CuDNN [Default: %default]')
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5 [Default: %default]')
+    parser.add_option('-e', dest='heatmaps', default=False, action='store_true', help='Draw score heatmaps, grouped by index SNP [Default: %default]')
     parser.add_option('-f', dest='genome_fasta', default='%s/data/genomes/hg19.fa'%os.environ['BASSETDIR'], help='Genome FASTA from which sequences will be drawn [Default: %default]')
     parser.add_option('-i', dest='index_snp', default=False, action='store_true', help='SNPs are labeled with their index SNP as column 6 [Default: %default]')
     parser.add_option('-l', dest='seq_len', type='int', default=600, help='Sequence length provided to the model [Default: %default]')
@@ -66,7 +68,9 @@ def main():
     # predict in Torch
     #################################################################
     if options.model_hdf5_file is None:
-        if options.cuda:
+        if options.cudnn:
+            cuda_str = '-cudnn'
+        elif options.cuda:
             cuda_str = '-cuda'
         else:
             cuda_str = ''
@@ -79,7 +83,7 @@ def main():
     # read in predictions
     seq_preds = []
     for line in open(options.model_hdf5_file):
-        seq_preds.append(np.array([float(p) for p in line.split()]))
+        seq_preds.append(np.array([np.float16(p) for p in line.split()]))
     seq_preds = np.array(seq_preds)
 
 
@@ -89,7 +93,7 @@ def main():
     if options.targets_file is None:
         target_labels = ['t%d' % ti for ti in range(seq_preds.shape[1])]
     else:
-        target_labels = [line.split()[1] for line in open(options.targets_file)]
+        target_labels = [line.split()[0] for line in open(options.targets_file)]
 
     header_cols = ('rsid', 'index', 'score', 'ref', 'alt', 'target', 'ref_pred', 'alt pred', 'sad')
     if options.csv:
@@ -160,42 +164,43 @@ def main():
     #################################################################
     # plot SAD heatmaps
     #################################################################
-    for ii in sad_matrices:
-        # convert fully to numpy arrays
-        sad_matrix = abs(np.array(sad_matrices[ii]))
-        print ii, sad_matrix.shape
+    if options.heatmaps:
+        for ii in sad_matrices:
+            # convert fully to numpy arrays
+            sad_matrix = abs(np.array(sad_matrices[ii]))
+            print ii, sad_matrix.shape
 
-        if sad_matrix.shape[0] > 1:
-            vlim = max(options.min_limit, sad_matrix.max())
-            score_mat = np.reshape(np.array(sad_scores[ii]), (-1, 1))
+            if sad_matrix.shape[0] > 1:
+                vlim = max(options.min_limit, sad_matrix.max())
+                score_mat = np.reshape(np.array(sad_scores[ii]), (-1, 1))
 
-            # plot heatmap
-            plt.figure(figsize=(20, 0.5 + 0.5*sad_matrix.shape[0]))
+                # plot heatmap
+                plt.figure(figsize=(20, 0.5 + 0.5*sad_matrix.shape[0]))
 
-            if options.score:
-                # lay out scores
-                cols = 12
-                ax_score = plt.subplot2grid((1,cols), (0,0))
-                ax_sad = plt.subplot2grid((1,cols), (0,1), colspan=(cols-1))
+                if options.score:
+                    # lay out scores
+                    cols = 12
+                    ax_score = plt.subplot2grid((1,cols), (0,0))
+                    ax_sad = plt.subplot2grid((1,cols), (0,1), colspan=(cols-1))
 
-                sns.heatmap(score_mat, xticklabels=False, yticklabels=False, vmin=0, vmax=1, cmap='Reds', cbar=False, ax=ax_score)
-            else:
-                ax_sad = plt.gca()
+                    sns.heatmap(score_mat, xticklabels=False, yticklabels=False, vmin=0, vmax=1, cmap='Reds', cbar=False, ax=ax_score)
+                else:
+                    ax_sad = plt.gca()
 
-            sns.heatmap(sad_matrix, xticklabels=target_labels, yticklabels=sad_labels[ii], vmin=0, vmax=vlim, ax=ax_sad)
+                sns.heatmap(sad_matrix, xticklabels=target_labels, yticklabels=sad_labels[ii], vmin=0, vmax=vlim, ax=ax_sad)
 
-            for tick in ax_sad.get_xticklabels():
-                tick.set_rotation(-45)
-                tick.set_horizontalalignment('left')
-                tick.set_fontsize(5)
+                for tick in ax_sad.get_xticklabels():
+                    tick.set_rotation(-45)
+                    tick.set_horizontalalignment('left')
+                    tick.set_fontsize(5)
 
-            plt.tight_layout()
-            if ii == '.':
-                out_pdf = '%s/sad_heat.pdf' % options.out_dir
-            else:
-                out_pdf = '%s/sad_%s_heat.pdf' % (options.out_dir, ii)
-            plt.savefig(out_pdf)
-            plt.close()
+                plt.tight_layout()
+                if ii == '.':
+                    out_pdf = '%s/sad_heat.pdf' % options.out_dir
+                else:
+                    out_pdf = '%s/sad_%s_heat.pdf' % (options.out_dir, ii)
+                plt.savefig(out_pdf)
+                plt.close()
 
 
 ################################################################################
