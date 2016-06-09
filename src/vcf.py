@@ -83,10 +83,6 @@ def snps_seq1(snps, genome_fasta, seq_len):
                 # skipping code above because seq_ref will be the wrong length as the
                 # proper alternative allele
 
-            else:
-
-                continue
-
         seq_snps.append(snp)
 
         # one hot code ref allele
