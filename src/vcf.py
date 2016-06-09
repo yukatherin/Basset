@@ -62,16 +62,32 @@ def snps_seq1(snps, genome_fasta, seq_len):
         else:
             seq = genome.fetch(snp.chrom, seq_start-1, seq_end).upper()
 
+        # extend to full length
         if len(seq) < seq_end - seq_start:
             seq += 'N'*(seq_end-seq_start-len(seq))
 
         # verify that ref allele matches ref sequence
         seq_ref = seq[left_len:left_len+len(snp.ref_allele)]
         if seq_ref != snp.ref_allele:
-            print >> sys.stderr, 'ERROR: %s - reference allele does not match reference genome: %s vs %s' % (snp.rsid, snp.ref_allele, seq_ref)
-            continue
-        else:
-            seq_snps.append(snp)
+            if seq_ref not in snp.alt_alleles:
+                print >> sys.stderr, 'WARNING: Skipping %s - neither allele matches reference genome: %s vs %s' % (snp.rsid, snp.ref_allele, seq_ref)
+                continue
+
+            else:
+                print >> sys.stderr, 'WARNING: %s - alt (as opposed to ref) allele matches reference genome; changing reference genome to match.' % (snp.rsid)
+
+                # remove alt allele and include ref allele
+                seq = seq[:left_len] + snp.ref_allele + seq[left_len+len(seq_ref):]
+
+                # note that this won't work for indels, but they will be sent to the
+                # skipping code above because seq_ref will be the wrong length as the
+                # proper alternative allele
+
+            else:
+
+                continue
+
+        seq_snps.append(snp)
 
         # one hot code ref allele
         seq_vecs_list.append(dna_one_hot(seq[:seq_len], seq_len))
