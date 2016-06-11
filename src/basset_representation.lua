@@ -25,7 +25,7 @@ cmd:text()
 opt = cmd:parse(arg)
 
 -- set cpu/gpu
-cudnn = opt.cudnn
+cuda_nn = opt.cudnn
 cuda = opt.cuda or opt.cudnn
 require 'convnet'
 

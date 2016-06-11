@@ -32,7 +32,7 @@ opt = cmd:parse(arg)
 torch.manualSeed(opt.rand)
 
 -- set cpu/gpu
-cudnn = opt.cudnn
+cuda_nn = opt.cudnn
 cuda = opt.cuda or opt.cudnn
 require 'convnet'
 

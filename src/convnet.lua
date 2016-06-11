@@ -7,7 +7,7 @@ if cuda then
     require 'cutorch'
     -- require 'inn'
 end
-if cudnn then
+if cuda_nn then
     require 'cudnn'
 end
 
@@ -236,7 +236,7 @@ function ConvNet:build(job, init_depth, init_len, num_targets)
     self.criterion.sizeAverage = false
 
     -- cuda
-    if cudnn then
+    if cuda_nn then
         self.model = cudnn.convert(self.model, cudnn)
     end
     if cuda then
@@ -293,7 +293,7 @@ function ConvNet:decuda()
     self.optim_state.m = self.optim_state.m:double()
     self.optim_state.tmp = self.optim_state.tmp:double()
     self.criterion:double()
-    if cudnn then
+    if cuda_nn then
         cudnn.convert(self.model, nn)
     end
     self.model:double()
@@ -316,7 +316,7 @@ end
 
 function ConvNet:get_nonlinears(pool)
     local relu_name = 'nn.ReLU'
-    if cudnn then
+    if cuda_nn then
         relu_name = 'cudnn.ReLU'
     end
 
