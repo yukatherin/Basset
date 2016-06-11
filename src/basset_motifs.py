@@ -37,6 +37,7 @@ def main():
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5.')
     parser.add_option('-o', dest='out_dir', default='.')
     parser.add_option('-m', dest='meme_db', default='%s/data/motifs/Homo_sapiens.meme' % os.environ['BASSETDIR'], help='MEME database used to annotate motifs')
+    parser.add_option('-p', dest='plot_heats', default=False, action='store_true', help='Plot heat maps describing filter activations in the test sequences [Default: %default]')
     parser.add_option('-s', dest='sample', default=None, type='int', help='Sample sequences from the test set [Default:%default]')
     parser.add_option('-t', dest='trim_filters', default=False, action='store_true', help='Trim uninformative positions off the filter ends [Default: %default]')
     (options,args) = parser.parse_args()
@@ -184,16 +185,17 @@ def main():
     #################################################################
     # global filter plots
     #################################################################
-    # plot filter-sequence heatmap
-    plot_filter_seq_heat(filter_outs, '%s/filter_seqs.pdf'%options.out_dir)
+    if options.plot_heats:
+        # plot filter-sequence heatmap
+        plot_filter_seq_heat(filter_outs, '%s/filter_seqs.pdf'%options.out_dir)
 
-    # plot filter-segment heatmap
-    plot_filter_seg_heat(filter_outs, '%s/filter_segs.pdf'%options.out_dir)
-    plot_filter_seg_heat(filter_outs, '%s/filter_segs_raw.pdf'%options.out_dir, whiten=False)
+        # plot filter-segment heatmap
+        plot_filter_seg_heat(filter_outs, '%s/filter_segs.pdf'%options.out_dir)
+        plot_filter_seg_heat(filter_outs, '%s/filter_segs_raw.pdf'%options.out_dir, whiten=False)
 
-    # plot filter-target correlation heatmap
-    plot_target_corr(filter_outs, seq_targets, filter_names, target_names, '%s/filter_target_cors_mean.pdf'%options.out_dir, 'mean')
-    plot_target_corr(filter_outs, seq_targets, filter_names, target_names, '%s/filter_target_cors_max.pdf'%options.out_dir, 'max')
+        # plot filter-target correlation heatmap
+        plot_target_corr(filter_outs, seq_targets, filter_names, target_names, '%s/filter_target_cors_mean.pdf'%options.out_dir, 'mean')
+        plot_target_corr(filter_outs, seq_targets, filter_names, target_names, '%s/filter_target_cors_max.pdf'%options.out_dir, 'max')
 
 
 def get_motif_proteins(meme_db_file):
