@@ -16,7 +16,7 @@ cmd:text()
 opt = cmd:parse(arg)
 
 cuda = true
-cudnn = opt.cudnn
+cuda_nn = opt.cudnn
 require 'convnet'
 
 ----------------------------------------------------------------
