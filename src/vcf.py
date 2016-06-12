@@ -86,8 +86,9 @@ def snps_seq1(snps, genome_fasta, seq_len):
         seq_snps.append(snp)
 
         # one hot code ref allele
-        seq_vecs_list.append(dna_one_hot(seq[:seq_len], seq_len))
-        seqs.append(seq[:seq_len])
+        seq_vecs_ref, seq_ref = dna_length_1hot(seq, seq_len)
+        seq_vecs_list.append(seq_vecs_ref)
+        seqs.append(seq_ref)
 
         # name ref allele
         seq_headers.append('%s_%s' % (snp.rsid, cap_allele(snp.ref_allele)))
@@ -97,7 +98,8 @@ def snps_seq1(snps, genome_fasta, seq_len):
             seq_alt = seq[:left_len] + alt_al + seq[left_len+len(snp.ref_allele):]
 
             # one hot code
-            seq_vecs_list.append(dna_one_hot(seq_alt, seq_len))
+            seq_vecs_alt, seq_alt = dna_length_1hot(seq_alt, seq_len)
+            seq_vecs_list.append(seq_vecs_alt)
             seqs.append(seq_alt)
 
             # name
@@ -107,6 +109,26 @@ def snps_seq1(snps, genome_fasta, seq_len):
     seq_vecs = np.vstack(seq_vecs_list)
 
     return seq_vecs, seqs, seq_headers, seq_snps
+
+
+def dna_length_1hot(seq, length):
+    ''' Adjust the sequence length and compute
+        a 1hot coding. '''
+
+    if length < len(seq):
+        # trim the sequence
+        seq_trim = (len(seq)-seq_len)/2
+        seq = seq[seq_trim:seq_trim+seq_len]
+
+    elif length > len(seq):
+        # extend with N's
+        nfront = (length-len(seq))/2
+        nback = length - len(seq) - nfront
+        seq = 'N'*nfront + seq + 'N'*nback
+
+    seq_1hot = dna_one_hot(seq)
+
+    return seq_1hot, seq
 
 
 def vcf_snps(vcf_file, index_snp=False, score=False):
