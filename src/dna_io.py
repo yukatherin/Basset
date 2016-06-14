@@ -139,6 +139,8 @@ def dna_one_hot(seq, seq_len=None, flatten=True):
         else:
             seq_start = (seq_len-len(seq))/2
 
+    seq = seq.upper()
+
     seq = seq.replace('A','0')
     seq = seq.replace('C','1')
     seq = seq.replace('G','2')
