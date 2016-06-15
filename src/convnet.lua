@@ -890,8 +890,8 @@ function ConvNet:train_epoch(batcher)
 
         elseif self.optimization == "adam" then
             self.optim_state = self.optim_state or {
-                learningRate = self.learning_rate
-                beta1 = self.beta1
+                learningRate = self.learning_rate,
+                beta1 = self.beta1,
                 beta2 = self.beta2
             }
             optim.adam(feval, self.parameters, self.optim_state)
