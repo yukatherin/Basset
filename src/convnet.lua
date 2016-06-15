@@ -102,8 +102,16 @@ function ConvNet:adjust_optim(job)
     -- base learning rate
     self.learning_rate = job.learning_rate or 0.002
 
-    -- gradient update momentum
-    self.momentum = job.momentum or 0.98
+    if self.optimization == "rmsprop" then
+        -- gradient update momentum
+        self.momentum = job.momentum or 0.98
+    elseif self.optimization == "adam" then
+        self.beta1 = job.beta1 or 0.9
+        self.beta2 = job.beta2 or 0.999
+    else
+        print("Unrecognized optimization algorithm")
+        exit(1)
+    end
 end
 
 
@@ -685,11 +693,18 @@ function ConvNet:setStructureParams(job)
     -- number of examples per weight update
     self.batch_size = job.batch_size or 128
 
+    -- optimization algorithm
+    self.optimization = job.optimization or "rmsprop"
+
     -- base learning rate
     self.learning_rate = job.learning_rate or 0.002
 
     -- gradient update momentum
     self.momentum = job.momentum or 0.98
+
+    -- adam momentums
+    self.beta1 = job.beta1 or 0.9
+    self.beta2 = job.beta2 or 0.999
 
     -- batch normaliztion
     if job.batch_normalize == nil then
@@ -866,11 +881,24 @@ function ConvNet:train_epoch(batcher)
         end
 
         -- perform RMSprop step
-        self.optim_state = self.optim_state or {
-            learningRate = self.learning_rate,
-            alpha = self.momentum
-        }
-        optim.rmsprop(feval, self.parameters, self.optim_state)
+        if self.optimization == "rmsprop" then
+            self.optim_state = self.optim_state or {
+                learningRate = self.learning_rate,
+                alpha = self.momentum
+            }
+            optim.rmsprop(feval, self.parameters, self.optim_state)
+
+        elseif self.optimization == "adam" then
+            self.optim_state = self.optim_state or {
+                learningRate = self.learning_rate
+                beta1 = self.beta1
+                beta2 = self.beta2
+            }
+            optim.adam(feval, self.parameters, self.optim_state)
+        else
+            print("Unrecognized optimization algorithm")
+            exit(1)
+        end
 
         -- cap weight paramaters
         self.model:maxParamNorm(self.weight_norm)
