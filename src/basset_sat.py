@@ -83,7 +83,7 @@ def main():
             # load sequences
             seqs_1hot = dna_io.load_sequences(input_file, permute=False)
             targets = None
-            target_labels = None
+            target_labels = False
             if options.targets_file:
                 target_labels = [line.split()[1] for line in open(options.targets_file)]
 
@@ -119,7 +119,7 @@ def main():
                 target_labels = np.array(hdf5_in['target_labels'])
             except:
                 seq_headers = None
-                target_labels = None
+                target_labels = False
             hdf5_in.close()
 
             # sample
