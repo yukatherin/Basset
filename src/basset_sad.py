@@ -29,6 +29,8 @@ def main():
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5 [Default: %default]')
     parser.add_option('-e', dest='heatmaps', default=False, action='store_true', help='Draw score heatmaps, grouped by index SNP [Default: %default]')
     parser.add_option('-f', dest='genome_fasta', default='%s/data/genomes/hg19.fa'%os.environ['BASSETDIR'], help='Genome FASTA from which sequences will be drawn [Default: %default]')
+    parser.add_option('--f1', dest='genome1_fasta', default=None, help='Genome FASTA which which major allele sequences will be drawn')
+    parser.add_option('--f2', dest='genome2_fasta', default=None, help='Genome FASTA which which minor allele sequences will be drawn')
     parser.add_option('-i', dest='index_snp', default=False, action='store_true', help='SNPs are labeled with their index SNP as column 6 [Default: %default]')
     parser.add_option('-l', dest='seq_len', type='int', default=600, help='Sequence length provided to the model [Default: %default]')
     parser.add_option('-m', dest='min_limit', default=0.1, type='float', help='Minimum heatmap limit [Default: %default]')
@@ -50,10 +52,13 @@ def main():
     # prep SNP sequences
     #################################################################
     # load SNPs
-    snps = vcf.vcf_snps(vcf_file, options.index_snp, options.score)
+    snps = vcf.vcf_snps(vcf_file, options.index_snp, options.score, options.genome2_fasta is not None)
 
     # get one hot coded input sequences
-    seq_vecs, seqs, seq_headers, snps = vcf.snps_seq1(snps, options.genome_fasta, options.seq_len)
+    if not options.genome1_fasta or not options.genome2_fasta:
+        seq_vecs, seqs, seq_headers, snps = vcf.snps_seq1(snps, options.seq_len, options.genome_fasta)
+    else:
+        seq_vecs, seqs, seq_headers, snps = vcf.snps2_seq1(snps, options.seq_len, options.genome1_fasta, options.genome2_fasta)
 
     # reshape sequences for torch
     seq_vecs = seq_vecs.reshape((seq_vecs.shape[0],4,1,seq_vecs.shape[1]/4))

@@ -27,6 +27,8 @@ def main():
     parser = OptionParser(usage)
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5 [Default: %default]')
     parser.add_option('-f', dest='genome_fasta', default='%s/data/genomes/hg19.fa'%os.environ['BASSETDIR'], help='Genome FASTA from which sequences will be drawn [Default: %default]')
+    parser.add_option('--f1', dest='genome1_fasta', default=None, help='Genome FASTA which which major allele sequences will be drawn')
+    parser.add_option('--f2', dest='genome2_fasta', default=None, help='Genome FASTA which which minor allele sequences will be drawn')
     parser.add_option('-g', dest='gain_height', default=False, action='store_true', help='Nucleotide heights determined by the max of loss and gain [Default: %default]')
     parser.add_option('-l', dest='seq_len', type='int', default=600, help='Sequence length provided to the model [Default: %default]')
     parser.add_option('-m', dest='min_limit', default=0.1, type='float', help='Minimum heatmap limit [Default: %default]')
@@ -48,10 +50,13 @@ def main():
     # prep SNP sequences
     #################################################################
     # load SNPs
-    snps = vcf.vcf_snps(vcf_file)
+    snps = vcf.vcf_snps(vcf_file, pos2=(options.genome2_fasta is not None))
 
     # get one hot coded input sequences
-    seqs_1hot, seqs, seq_headers, snps = vcf.snps_seq1(snps, options.genome_fasta, options.seq_len)
+    if not options.genome1_fasta or not options.genome2_fasta:
+        seqs_1hot, seqs, seq_headers, snps = vcf.snps_seq1(snps, options.seq_len, options.genome_fasta)
+    else:
+        seqs_1hot, seqs, seq_headers, snps = vcf.snps2_seq1(snps, options.seq_len, options.genome1_fasta, options.genome2_fasta)
 
     # reshape sequences for torch
     seqs_1hot = seqs_1hot.reshape((seqs_1hot.shape[0],4,1,seqs_1hot.shape[1]/4))
