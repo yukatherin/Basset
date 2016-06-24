@@ -30,7 +30,7 @@ def main():
     parser.add_option('-s', dest='random_seed', default=1, type='int', help='numpy.random seed [Default: %default]')
     parser.add_option('-t', dest='test_pct', default=0, type='float', help='Test % [Default: %default]')
     parser.add_option('-v', dest='valid_pct', default=0, type='float', help='Validation % [Default: %default]')
-    parser.add_option('--vt', dest='valid_test', default=False, action='store_true', help='Use validation ')
+    parser.add_option('--vt', dest='valid_test', default=False, action='store_true', help='Use validation as test, too [Default: %default]')
     (options,args) = parser.parse_args()
 
     if len(args) != 3:

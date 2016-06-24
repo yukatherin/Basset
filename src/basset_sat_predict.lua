@@ -98,8 +98,15 @@ for si=1,num_seqs do
 	-- construct a batch of modified sequecnes
 	local mi = 1
 	for pos=delta_start,delta_end do
+        seq_nt = get_1hot(seq_1hot, pos)
+
+        -- dodge N's crashing it
+        if seq_nt == "N" then
+            seq_nt = "A"
+        end
+
 		for ni=1,4 do
-			if nts[ni] ~= get_1hot(seq_1hot, pos) then
+			if nts[ni] ~= seq_nt then
 				-- copy the seq's one hot coding
 				seq_mods[mi] = seq_1hot:clone()
 
@@ -126,6 +133,11 @@ for si=1,num_seqs do
 	for pos=delta_start,delta_end do
 		local pi = 1 + pos - delta_start
 		local seq_nt = get_1hot(seq_1hot, pos)
+
+        -- dodge N's crashing it
+        if seq_nt == "N" then
+            seq_nt = "A"
+        end
 
 		for ni=1,4 do
 			if nts[ni] == seq_nt then
