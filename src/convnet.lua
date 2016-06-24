@@ -79,6 +79,9 @@ function ConvNet:adjust_final(num_targets, target_type)
         self.model:cuda()
         self.criterion:cuda()
     end
+    if cuda_nn then
+        self.model = cudnn.convert(self.model, cudnn)
+    end
 
     -- retrieve parameters and gradients
     self.parameters, self.gradParameters = self.model:getParameters()
@@ -93,21 +96,34 @@ end
 -- Reset the optim state and set optimization hyper-params
 ----------------------------------------------------------------
 function ConvNet:adjust_optim(job)
-    -- reset rmsprop state
-    self.optim_state.m = nil
-
     -- number of examples per weight update
     self.batch_size = job.batch_size or 128
 
     -- base learning rate
     self.learning_rate = job.learning_rate or 0.002
+    self.optim_state.learningRate = self.learning_rate
 
     if self.optimization == "rmsprop" then
-        -- gradient update momentum
+        -- reset state
+        self.optim_state.m = nil
+
+        -- gradient momentum
         self.momentum = job.momentum or 0.98
+        self.optim_state.alpha = self.momentum
+
     elseif self.optimization == "adam" then
+        -- reset state
+        self.optim_state.t = nil
+        self.optim_state.m = nil
+        self.optim_state.v = nil
+        self.optim_state.denom = nil
+
+        -- gradients momentum
         self.beta1 = job.beta1 or 0.9
+        self.optim_state.beta1 = self.beta1
         self.beta2 = job.beta2 or 0.999
+        self.optim_state.beta2 = self.beta2
+
     else
         print("Unrecognized optimization algorithm")
         exit(1)
@@ -244,13 +260,13 @@ function ConvNet:build(job, init_depth, init_len, num_targets)
     self.criterion.sizeAverage = false
 
     -- cuda
-    if cuda_nn then
-        self.model = cudnn.convert(self.model, cudnn)
-    end
     if cuda then
         print("Running on GPU.")
         self.model:cuda()
         self.criterion:cuda()
+    end
+    if cuda_nn then
+        self.model = cudnn.convert(self.model, cudnn)
     end
 
     -- retrieve parameters and gradients
@@ -298,16 +314,26 @@ end
 -- Move the model back to the CPU.
 ----------------------------------------------------------------
 function ConvNet:decuda()
-    self.optim_state.m = self.optim_state.m:double()
-    self.optim_state.tmp = self.optim_state.tmp:double()
+    if self.optimization == "rmsprop" then
+        self.optim_state.m = self.optim_state.m:double()
+        self.optim_state.tmp = self.optim_state.tmp:double()
+    elseif self.optimization == "adam" then
+        self.optim_state.m = self.optim_state.m:double()
+        self.optim_state.v = self.optim_state.v:double()
+        self.optim_state.denom = self.optim_state.denom:double()
+    end
+    
     self.criterion:double()
+
     if cuda_nn then
         cudnn.convert(self.model, nn)
     end
     self.model:double()
+
     self.parameters, self.gradParameters = self.model:getParameters()
     -- self.parameters = self.parameters:double()
     -- self.gradParameters = self.gradParameters:double()
+
     cuda = false
 end
 
