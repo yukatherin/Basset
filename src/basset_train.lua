@@ -102,6 +102,7 @@ local build_success = true
 if opt.restart ~= '' then
     local convnet_params = torch.load(opt.restart)
     convnet:load(convnet_params)
+    convnet:adjust_optim(job)
 elseif opt.seed ~= '' then
     local convnet_params = torch.load(opt.seed)
     convnet:load(convnet_params)
