@@ -81,7 +81,7 @@ def main():
             cuda_str = ''
 
         options.model_hdf5_file = '%s/model_out.txt' % options.out_dir
-        cmd = 'basset_predict.lua -rc -norm %s %s %s/model_in.h5 %s' % (cuda_str, model_th, options.out_dir, options.model_hdf5_file)
+        cmd = 'basset_predict.lua -rc %s %s %s/model_in.h5 %s' % (cuda_str, model_th, options.out_dir, options.model_hdf5_file)
         print cmd
         subprocess.call(cmd, shell=True)
 
