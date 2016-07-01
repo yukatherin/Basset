@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future_ import print_function
 from optparse import OptionParser
 import os
 
@@ -47,11 +48,11 @@ def main():
     auc_out = open('%s/auc.txt' % options.out_dir, 'w')
 
     for ti in range(len(target_labels)):
-        print 'Target %d: %s' % (ti,target_labels[ti])
+        print('Target %d: %s' % (ti,target_labels[ti]))
 
         # compute AUC
         auc = average_precision_score(targets[:,ti], preds[,:ti])
-        print >> auc_out, '%d\t%s\t%f' % (ti, target_labels[ti], auc)
+        print('%d\t%s\t%f' % (ti, target_labels[ti], auc), file=auc_out)
 
         # compute curves
         prec, recall, thresh = precision_recall_curve(targets[:,ti], preds[,:ti])
