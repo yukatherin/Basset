@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from optparse import OptionParser
+import h5py
 import os
 
 import matplotlib.pyplot as plt
