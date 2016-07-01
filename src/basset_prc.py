@@ -4,6 +4,9 @@ from optparse import OptionParser
 import h5py
 import os
 
+import matplotlib
+matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -81,6 +84,7 @@ def main():
 
         out_pdf = '%s/t%d.pdf' % (options.out_dir, ti)
         plt.savefig(out_pdf)
+        plt.close()
 
     auc_out.close()
 
