@@ -61,7 +61,7 @@ def main():
 
         # print
         prc_out = open('%s/t%d.txt' % (options.out_dir, ti), 'w')
-        for i in range(len(prec)):
+        for i in range(len(thresh)):
             print('%f %f %f' % (thresh[i], recall[i], prec[i]), file=prc_out)
         prc_out.close()
 
