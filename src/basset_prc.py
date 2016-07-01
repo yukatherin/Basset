@@ -51,11 +51,11 @@ def main():
         print('Target %d: %s' % (ti,target_labels[ti]))
 
         # compute AUC
-        auc = average_precision_score(targets[:,ti], preds[,:ti])
+        auc = average_precision_score(targets[:,ti], preds[:,ti])
         print('%d\t%s\t%f' % (ti, target_labels[ti], auc), file=auc_out)
 
         # compute curves
-        prec, recall, thresh = precision_recall_curve(targets[:,ti], preds[,:ti])
+        prec, recall, thresh = precision_recall_curve(targets[:,ti], preds[:,ti])
         rate = sum(targets[:,ti]) / float(targets.shape[0])
 
         # print
