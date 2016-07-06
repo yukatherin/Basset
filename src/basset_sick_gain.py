@@ -156,9 +156,10 @@ def sad_targets(sad_table_file):
     snp_id = line.split()[0]
     targets = 1
 
-    line = sad_in.readline():
+    line = sad_in.readline()
     while snp_id == line.split()[0]:
         targets += 1
+        line = sad_in.readline()
 
     return targets
 
