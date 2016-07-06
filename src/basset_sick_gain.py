@@ -57,7 +57,7 @@ def main():
         shutil.copy(excl_bed_file, supp_excl_bed_file)
 
         # add on additional sites
-        supp_excl_bed_out = open(supp_excl_bed_out, 'a')
+        supp_excl_bed_out = open(supp_excl_bed_file, 'a')
         for line in open(options.add_excl_bed):
             print(line, file=supp_excl_bed_out, end='')
         supp_excl_bed_out.close()
