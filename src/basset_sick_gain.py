@@ -30,7 +30,7 @@ import stats
 def main():
     usage = 'usage: %prog [options] <vcf_file> <excl_bed_file> <model_file>'
     parser = OptionParser(usage)
-    parser.add_option('-e', dest='add_excl_bed', default='%s/assembly/hg19_gaps.bed', help='Additional genomic regions to exclude from the shuffle [Default: %default]')
+    parser.add_option('-e', dest='add_excl_bed', default='%s/assembly/hg19_gaps.bed'%os.environ['HG19'], help='Additional genomic regions to exclude from the shuffle [Default: %default]')
     parser.add_option('-g', dest='gpu', default=False, action='store_true', help='Run on GPU [Default: %default]')
     parser.add_option('-l', dest='seq_len', type='int', default=600, help='Sequence length provided to the model [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='sad_shuffle', help='Output directory')
