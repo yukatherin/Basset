@@ -149,7 +149,7 @@ def compute_sad(vcf_file, model_file, out_dir, seq_len, gpu, replot):
 
 def sad_targets(sad_table_file):
     ''' Determine how many targets there are in a SAD table.'''
-    sad_in = open(sad_table_file):
+    sad_in = open(sad_table_file)
     sad_in.readline()
 
     line = sad_in.readline()
