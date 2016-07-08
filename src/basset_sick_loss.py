@@ -25,6 +25,7 @@ import stats
 # Todo:
 #  -Control for GC% changes introduced by mutation shuffles.
 #  -Control for positional changes within the DHS regions.
+#  -Properly handle indels.
 ################################################################################
 
 ################################################################################
@@ -72,9 +73,8 @@ def main():
         # filter VCF to overlapping SNPs
         print("  intersecting SNPs")
         sample_vcf_file = '%s/%s.vcf' % (options.out_dir,sample)
-        cmd = 'bedtools intersect -wo -a %s -b %s > %s' % (vcf_file, bed_file, sample_vcf_file)
         if not options.replot:
-            subprocess.call(cmd, shell=True)
+            filter_vcf(vcf_file, bed_file, sample_vcf_file)
 
         # compute SAD scores for this sample's SNPs
         print("  computing SAD")
@@ -176,6 +176,24 @@ def compute_sad(sample_vcf_file, model_file, si, out_dir, seq_len, gpu, replot):
     return np.array(sad)
 
 
+def filter_vcf(vcf_file, bed_file, sample_vcf_file):
+    ''' Filter the VCF file for SNPs that overlap
+         the BED file, removing indels. '''
+
+    # open filtered file
+    sample_vcf_out = open(sample_vcf_file, 'w')
+
+    # intersect
+    p = subprocess.Popen('bedtools intersect -wo -a %s -b %s' % (vcf_file, bed_file), stdout=subprocess.PIPE, shell=True)
+
+    for line in p.stdout:
+        a = line.split()
+        if len(a[3]) == len(a[4]) == 1:
+            print(line, file=sample_vcf_out, end='')
+
+    sample_vcf_out.close()
+
+
 def retrieve_sad(sample_vcf_file, sad_table_file, si):
     ''' Retrieve SAD scores from a pre-computed table.
 
@@ -202,6 +220,49 @@ def retrieve_sad(sample_vcf_file, sad_table_file, si):
 
 
 def shuffle_snps(in_vcf_file, out_vcf_file, genome):
+    ''' Shuffle the SNPs within their overlapping DHS. '''
+    out_vcf_open = open(out_vcf_file, 'w')
+
+    for line in open(in_vcf_file):
+        a = line.split()
+
+        # read SNP info
+        snp_chrom = a[0]
+        snp_pos = int(a[1])
+        snp_nt = a[3]
+
+        # determine BED start
+        bi = 5
+        while a[bi] != snp_chrom:
+            bi += 1
+
+        # read BED info
+        bed_chrom = a[bi]
+        bed_start = int(a[bi+1])
+        bed_end = int(a[bi+2])
+
+        # get sequence
+        bed_seq = genome.fetch(bed_chrom, bed_start, bed_end)
+
+        # determine matching positions
+        bed_nt_matches = [i for i in range(len(bed_seq)) if bed_seq[i] == snp_nt]
+        while len(bed_nt_matches) == 0:
+            # expand segment by 10 nt
+            bed_start = max(0, bed_start-10)
+            bed_end += 10
+            bed_seq = genome.fetch(bed_chrom, bed_start, bed_end)
+
+        # sample new SNP position
+        shuf_pos = bed_start + 1 + random.choice(bed_nt_matches)
+
+        # write into columns
+        a[1] = str(shuf_pos)
+        print('\t'.join(a), file=out_vcf_open)
+
+    out_vcf_open.close()
+
+
+def shuffle_snps_old(in_vcf_file, out_vcf_file, genome):
     ''' Shuffle the SNPs within their overlapping DHS. '''
     out_vcf_open = open(out_vcf_file, 'w')
     for line in open(in_vcf_file):
