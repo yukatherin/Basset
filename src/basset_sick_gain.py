@@ -248,8 +248,8 @@ def shuffle_snps(vcf_file, shuf_vcf_file, excl_bed_file, genome_file, genome_ope
     shuf_vcf_out.close()
 
     # clean up temp files
-    #for ci in range(si):
-    #    os.remove('%s.%d' % (shuf_vcf_file,ci))
+    for ci in range(si):
+        os.remove('%s.%d' % (shuf_vcf_file,ci))
 
 
 def shuffle_snps_old(vcf_file, shuf_vcf_file, excl_bed_file, genome_file, genome_open):
