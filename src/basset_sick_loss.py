@@ -128,6 +128,14 @@ def main():
         plt.savefig('%s/%s_cdf.pdf' % (options.out_dir,sample))
         plt.close()
 
+        # plot Q-Q
+        plt.figure()
+        plt.scatter(sorted([true_sad]*options.num_shuffles), sorted(shuffle_sad.flatten()), color=sns_colors[0])
+        ax = plt.gca()
+        ax.grid(True, linestyle=':')
+        plt.savefig('%s/%s_qq.pdf' % (options.out_dir,sample))
+        plt.close()
+
         #########################################
         # statistical tests
         #########################################
