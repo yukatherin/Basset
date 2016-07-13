@@ -11,6 +11,7 @@ matplotlib.use('Agg')
 import numpy as np
 import matplotlib.pyplot as plt
 import pysam
+from scipy.stats.mstats import mquantiles
 import seaborn as sns
 
 import stats
@@ -131,14 +132,18 @@ def main():
         plt.close()
 
         # plot Q-Q
+        true_q = mquantiles(true_sad[:,ti], np.linspace(0,1,min(1000,true_sad.shape[0])))
+        shuf_q = mquantiles(shuffle_sad_mean[:,ti], np.linspace(0,1,min(1000,true_sad.shape[0])))
         plt.figure()
-        plt.scatter(sorted(true_sad[:,ti]), sorted(shuffle_sad_mean[:,ti]), color=sns_colors[0])
-        pmin = 1.05*min(true_sad[:,ti].min(), shuffle_sad_mean[:,ti].min())
-        pmax = 1.05*max(true_sad[:,ti].max(), shuffle_sad_mean[:,ti].max())
+        plt.scatter(true_q, shuf_q, color=sns_colors[0])
+        pmin = 1.05*min(true_q[0], shuf_q[0])
+        pmax = 1.05*max(true_q[-1], shuf_q[-1])
         plt.plot([pmin,pmax], [pmin,pmax], color='black', linewidth=1)
         ax = plt.gca()
         ax.set_xlim(pmin,pmax)
         ax.set_ylim(pmin,pmax)
+        ax.set_xlabel('True SAD')
+        ax.set_ylabel('Shuffled SAD')
         ax.grid(True, linestyle=':')
         plt.savefig('%s/%s_qq.pdf' % (options.out_dir,targets[ti]))
         plt.close()
