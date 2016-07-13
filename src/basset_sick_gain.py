@@ -97,6 +97,9 @@ def main():
         # compute SAD scores for shuffled SNPs
         shuffle_sad[:,:,ni] = compute_sad(shuf_vcf_file, model_file, '%s/shuf%d_sad'%(options.out_dir,ni), options.seq_len, options.cuda, options.replot)
 
+    # compute shuffle means
+    shuffle_sad_mean = shuffle_sad.mean(axis=2)
+
     #########################################
     # stats and plots
     #########################################
@@ -111,6 +114,9 @@ def main():
 
     mw_out = open('%s/mannwhitney.txt' % options.out_dir, 'w')
 
+    # plot defaults
+    sns.set(font_scale=1.5, style='ticks')
+
     for ti in targets:
         # plot CDFs
         sns_colors = sns.color_palette('deep')
@@ -122,6 +128,19 @@ def main():
         ax.set_xlim(-.15, .15)
         plt.legend()
         plt.savefig('%s/%s_cdf.pdf' % (options.out_dir,targets[ti]))
+        plt.close()
+
+        # plot Q-Q
+        plt.figure()
+        plt.scatter(sorted(true_sad[:,ti]), sorted(shuffle_sad_mean[:,ti]), color=sns_colors[0])
+        pmin = 1.05*min(true_sad[:,ti].min(), shuffle_sad_mean[:,ti].min())
+        pmax = 1.05*max(true_sad[:,ti].max(), shuffle_sad_mean[:,ti].max())
+        plt.plot([pmin,pmax], [pmin,pmax], color='black', linewidth=1)
+        ax = plt.gca()
+        ax.set_xlim(pmin,pmax)
+        ax.set_ylim(pmin,pmax)
+        ax.grid(True, linestyle=':')
+        plt.savefig('%s/%s_qq.pdf' % (options.out_dir,targets[ti]))
         plt.close()
 
         # compute Mann-Whitney

@@ -62,6 +62,9 @@ def main():
     # open mann-whitney stats file
     mw_out = open('%s/mannwhitney.txt' % options.out_dir, 'w')
 
+    # plot defaults
+    sns.set(font_scale=1.5, style='ticks')
+
     si = 0
     for line in open(sample_beds_file):
         sample, bed_file = line.split()
@@ -131,10 +134,12 @@ def main():
         # plot Q-Q
         plt.figure()
         plt.scatter(sorted(true_sad), sorted(shuffle_sad_mean), color=sns_colors[0])
-        pmin = min(true_sad.min(), shuffle_sad_mean.min())
-        pmax = max(true_sad.max(), shuffle_sad_mean.max())
-        plt.plot([pmin,pmax], [pmin,pmax], color='black')
+        pmin = 1.05*min(true_sad.min(), shuffle_sad_mean.min())
+        pmax = 1.05*max(true_sad.max(), shuffle_sad_mean.max())
+        plt.plot([pmin,pmax], [pmin,pmax], color='black', linewidth=1)
         ax = plt.gca()
+        ax.set_xlim(pmin,pmax)
+        ax.set_ylim(pmin,pmax)
         ax.grid(True, linestyle=':')
         plt.savefig('%s/%s_qq.pdf' % (options.out_dir,sample))
         plt.close()
