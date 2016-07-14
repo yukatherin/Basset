@@ -132,8 +132,8 @@ def main():
         plt.close()
 
         # plot Q-Q
-        true_q = mquantiles(true_sad[:,ti], np.linspace(0,1,min(1000,true_sad.shape[0])))
-        shuf_q = mquantiles(shuffle_sad_mean[:,ti], np.linspace(0,1,min(1000,true_sad.shape[0])))
+        true_q = mquantiles(true_sad[:,ti], np.linspace(0,1,min(10000,true_sad.shape[0])))
+        shuf_q = mquantiles(shuffle_sad_mean[:,ti], np.linspace(0,1,min(10000,true_sad.shape[0])))
         plt.figure()
         plt.scatter(true_q, shuf_q, color=sns_colors[0])
         pmin = 1.05*min(true_q[0], shuf_q[0])
