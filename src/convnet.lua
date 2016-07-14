@@ -322,7 +322,7 @@ function ConvNet:decuda()
         self.optim_state.v = self.optim_state.v:double()
         self.optim_state.denom = self.optim_state.denom:double()
     end
-    
+
     self.criterion:double()
 
     if cuda_nn then
@@ -335,6 +335,17 @@ function ConvNet:decuda()
     -- self.gradParameters = self.gradParameters:double()
 
     cuda = false
+end
+
+
+----------------------------------------------------------------
+-- drop_rate
+--
+-- Decrease the optimization learning_rate by a multiplier
+----------------------------------------------------------------
+function ConvNet:drop_rate()
+    self.learning_rate = self.learning_rate * 2/3
+    self.optim_state.learningRate = self.learning_rate
 end
 
 

@@ -17,6 +17,7 @@ cmd:text()
 cmd:text('Options:')
 cmd:option('-cuda', false, 'Run on GPGPU')
 cmd:option('-cudnn', false, 'Run on GPGPU w/ cuDNN')
+cmd:option('-drop_rate', false, 'Decrease the learning_rate when training loss stalls')
 cmd:option('-job', '', 'Table of job hyper-parameters')
 cmd:option('-max_epochs', 1000, 'Maximum training epochs to perform')
 cmd:option('-restart', '', 'Restart an interrupted training run')
@@ -189,6 +190,11 @@ while epoch <= opt.max_epochs and epoch - epoch_best <= opt.stagnant_t do
 
         -- save best
         torch.save(string.format('%s_best.th' % opt.save), convnet)
+    end
+
+    -- drop learning rate
+    if opt.drop_rate and (train_loss_last - train_loss)/train_loss_last < .001 then
+        convnet.drop_rate()
     end
 
     -- change back to training mode
