@@ -135,6 +135,7 @@ convnet.model:training()
 local epoch = 1
 local epoch_best = 1
 local acc_best = 0
+local train_loss_last
 local valid_loss
 local valid_acc
 local batcher = Batcher:__init(train_seqs, train_targets, convnet.batch_size)
@@ -193,9 +194,10 @@ while epoch <= opt.max_epochs and epoch - epoch_best <= opt.stagnant_t do
     end
 
     -- drop learning rate
-    if opt.drop_rate and (train_loss_last - train_loss)/train_loss_last < .001 then
+    if opt.drop_rate and tran_loss_last ~= nil and (train_loss_last - train_loss)/train_loss_last < .001 then
         convnet.drop_rate()
     end
+    tran_loss_last = train_loss
 
     -- change back to training mode
     convnet.model:training()
