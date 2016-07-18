@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 from optparse import OptionParser
 import os, re, subprocess, tempfile
 
@@ -27,7 +28,7 @@ def seq_logo(seq, heights, out_eps, weblogo_args='', color_mode='classic'):
     # print the sequence to a temp fasta file
     fasta_fd, fasta_file = tempfile.mkstemp()
     fasta_out = open(fasta_file, 'w')
-    print >> fasta_out, '>seq\n%s' % seq
+    print('>seq\n%s' % seq, file=fasta_out)
     fasta_out.close()
 
     # colors
@@ -40,7 +41,7 @@ def seq_logo(seq, heights, out_eps, weblogo_args='', color_mode='classic'):
         color_str += ' --color orange G "G"'
         color_str += ' --color green T "T"'
     else:
-        print >> sys.stderr, 'Unrecognized color_mode %s' % color_mode
+        print('Unrecognized color_mode %s' % color_mode, file=sys.stderr)
 
     # print figure to a temp eps file
     eps_fd, eps_file = tempfile.mkstemp()
@@ -58,7 +59,7 @@ def seq_logo(seq, heights, out_eps, weblogo_args='', color_mode='classic'):
 
         # nt column begins
         if start_stack_match:
-            print >> out_eps_open, line,
+            print(line, file=out_eps_open)
 
             # loop over 4 nt's
             for i in range(4):
@@ -67,16 +68,16 @@ def seq_logo(seq, heights, out_eps, weblogo_args='', color_mode='classic'):
 
                 nt = a[2][1:-1]
                 if nt != seq[si]:
-                    print >> out_eps_open, line,
+                    print(line, file=out_eps_open)
                 else:
                     # change the nt of seq
                     a[1] = '%.6f' % heights[si]
-                    print >> out_eps_open, ' %s' % ' '.join(a)
+                    print(' %s' % ' '.join(a), file=out_eps_open)
 
             # move to next nucleotide
             si += 1
         else:
-            print >> out_eps_open, line,
+            print(line, file=out_eps_open)
 
         # advance to next line
         line = weblogo_eps_in.readline()

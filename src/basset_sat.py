@@ -345,7 +345,13 @@ def get_real_pred(seq_mod_preds, seq):
 
 def subplot_params(seq_len):
     ''' Specify subplot layout parameters for various sequence lengths. '''
-    if seq_len < 500:
+    if seq_len <= 130:
+        spp = {'heat_cols': 400,
+                'sad_start': 1,
+                'sad_end': 323,
+                'logo_start': 0,
+                'logo_end': 324}
+    elif seq_len < 500:
         spp = {'heat_cols': 400,
                 'sad_start': 1,
                 'sad_end': 323,
