@@ -195,7 +195,7 @@ while epoch <= opt.max_epochs and epoch - epoch_best <= opt.stagnant_t do
 
     -- drop learning rate
     if opt.drop_rate and train_loss_last ~= nil and (train_loss_last - train_loss)/train_loss_last < .001 then
-        convnet.drop_rate()
+        convnet:drop_rate()
     end
     tran_loss_last = train_loss
 
