@@ -302,6 +302,11 @@ function ConvNet:cuda()
     self.optim_state.tmp = self.optim_state.tmp:cuda()
     self.criterion:cuda()
     self.model:cuda()
+
+    if cuda_nn then
+        cudnn.convert(self.model, nn)
+    end
+
     self.parameters, self.gradParameters = self.model:getParameters()
     -- self.parameters = self.parameters:double()
     -- self.gradParameters = self.gradParameters:double()
