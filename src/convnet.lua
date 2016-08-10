@@ -1050,11 +1050,16 @@ function ConvNet:test(Xf, Yf, batch_size, rc_avg)
             -- read Yi from file
             local Yi = Yf:partial({1,batcher.num_seqs},{yi,yi}):squeeze()
 
-            -- compute ROC points
-            roc_points[yi] = ROC.points(preds[{{},yi}], Yi)
+            if(Yi:sum() == 0) then
+                AUCs[yi] = 1.0
 
-            -- compute AUCs
-            AUCs[yi] = ROC.area(roc_points[yi])
+            else
+                -- compute ROC points
+                roc_points[yi] = ROC.points(preds[{{},yi}], Yi)
+
+                -- compute AUCs
+                AUCs[yi] = ROC.area(roc_points[yi])
+            end
 
             collectgarbage()
         end
