@@ -1076,36 +1076,6 @@ end
 
 
 ----------------------------------------------------------------
--- table_ext
---
--- Extend the table to be the given size, adding in the default
--- value to fill it.
-----------------------------------------------------------------
-function table_ext(try, default, size)
-    -- set var to try if available or default otherwise
-    var = try or default
-
-    -- if it was a number
-    if type(var) == "number" then
-        -- change default to the number
-        default = var
-
-        -- make it a table
-        var = {var}
-    end
-
-    -- extend the table if too small
-    for i = 2,size do
-        if i > #var then
-            var[i] = default
-        end
-    end
-
-    return var
-end
-
-
-----------------------------------------------------------------
 -- test_mc
 --
 -- Predict targets for X and compare to Y.
@@ -1182,11 +1152,16 @@ function ConvNet:test_mc(Xf, Yf, mc_n, batch_size)
             -- read Yi from file
             local Yi = Yf:partial({1,batcher.num_seqs},{yi,yi}):squeeze()
 
-            -- compute ROC points
-            roc_points[yi] = ROC.points(preds[{{},yi}], Yi)
+            if(Yi:sum() == 0) then
+                AUCs[yi] = 1.0
 
-            -- compute AUCs
-            AUCs[yi] = ROC.area(roc_points[yi])
+            else
+                -- compute ROC points
+                roc_points[yi] = ROC.points(preds[{{},yi}], Yi)
+
+                -- compute AUCs
+                AUCs[yi] = ROC.area(roc_points[yi])
+            end
 
             collectgarbage()
         end
@@ -1198,4 +1173,33 @@ function ConvNet:test_mc(Xf, Yf, mc_n, batch_size)
 
         return avg_loss, R2s
     end
+end
+
+----------------------------------------------------------------
+-- table_ext
+--
+-- Extend the table to be the given size, adding in the default
+-- value to fill it.
+----------------------------------------------------------------
+function table_ext(try, default, size)
+    -- set var to try if available or default otherwise
+    var = try or default
+
+    -- if it was a number
+    if type(var) == "number" then
+        -- change default to the number
+        default = var
+
+        -- make it a table
+        var = {var}
+    end
+
+    -- extend the table if too small
+    for i = 2,size do
+        if i > #var then
+            var[i] = default
+        end
+    end
+
+    return var
 end
