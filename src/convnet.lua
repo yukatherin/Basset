@@ -1051,6 +1051,7 @@ function ConvNet:test(Xf, Yf, batch_size, rc_avg)
             local Yi = Yf:partial({1,batcher.num_seqs},{yi,yi}):squeeze()
 
             if(Yi:sum() == 0) then
+                roc_points[yi] = nil
                 AUCs[yi] = 1.0
 
             else
@@ -1153,6 +1154,7 @@ function ConvNet:test_mc(Xf, Yf, mc_n, batch_size)
             local Yi = Yf:partial({1,batcher.num_seqs},{yi,yi}):squeeze()
 
             if(Yi:sum() == 0) then
+                roc_points[yi] = nil
                 AUCs[yi] = 1.0
 
             else
