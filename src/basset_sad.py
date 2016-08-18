@@ -27,6 +27,7 @@ def main():
     parser.add_option('--cuda', dest='cuda', default=False, action='store_true', help='Predict on the GPU [Default: %default]')
     parser.add_option('--cudnn', dest='cudnn', default=False, action='store_true', help='Predict on the GPU w/ CuDNN [Default: %default]')
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5 [Default: %default]')
+    parser.add_option('--dense', dest='dense_table', default=False, action='store_true', help='Print a dense SNP x Targets table, as opposed to a SNP/Target pair per line [Default: %default]')
     parser.add_option('-e', dest='heatmaps', default=False, action='store_true', help='Draw score heatmaps, grouped by index SNP [Default: %default]')
     parser.add_option('-f', dest='genome_fasta', default='%s/data/genomes/hg19.fa'%os.environ['BASSETDIR'], help='Genome FASTA from which sequences will be drawn [Default: %default]')
     parser.add_option('--f1', dest='genome1_fasta', default=None, help='Genome FASTA which which major allele sequences will be drawn')
@@ -135,24 +136,36 @@ def main():
             # save scores
             sad_scores.setdefault(snp.index_snp,[]).append(snp.score)
 
-            # print table lines
-            for ti in range(len(alt_sad)):
-                # set index SNP
-                snp_is = '%-13s' % '.'
-                if options.index_snp:
-                    snp_is = '%-13s' % snp.index_snp
+            # set index SNP
+            snp_is = '%-13s' % '.'
+            if options.index_snp:
+                snp_is = '%-13s' % snp.index_snp
 
-                # set score
-                snp_score = '%5s' % '.'
-                if options.score:
-                    snp_score = '%5.3f' % snp.score
+            # set score
+            snp_score = '%5s' % '.'
+            if options.score:
+                snp_score = '%5.3f' % snp.score
 
-                # print line
-                cols = (snp.rsid, snp_is, snp_score, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
+            # print table line(s)
+            if options.dense_table:
                 if options.csv:
-                    print >> sad_out, ','.join([str(c) for c in cols])
-                else:
-                    print >> sad_out, '%-13s %s %5s %6s %6s %12s %6.4f %6.4f %7.4f' % cols
+                    cols = [snp.rsid, snp_is, snp_score, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al)]
+                    for ti in range(len(alt_sad)):
+                        cols += ['%.4f'%ref_preds[ti], '%.4f'%alt_sad[ti]]
+
+                    sep = ' '
+                    if options.csv:
+                        sep = ','
+
+                    print >> sad_out, sep.join([str(c) for c in cols])
+
+            else:
+                for ti in range(len(alt_sad)):
+                    cols = (snp.rsid, snp_is, snp_score, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
+                    if options.csv:
+                        print >> sad_out, ','.join([str(c) for c in cols])
+                    else:
+                        print >> sad_out, '%-13s %s %5s %6s %6s %12s %6.4f %6.4f %7.4f' % cols
 
     sad_out.close()
 
