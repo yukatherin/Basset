@@ -298,8 +298,14 @@ end
 -- Move the model to the GPU. Untested.
 ----------------------------------------------------------------
 function ConvNet:cuda()
-    self.optim_state.m = self.optim_state.m:cuda()
-    self.optim_state.tmp = self.optim_state.tmp:cuda()
+    if self.optimization == "rmsprop" then
+        self.optim_state.m = self.optim_state.m:cuda()
+        self.optim_state.tmp = self.optim_state.tmp:cuda()
+    elseif self.optimization == "adam" then
+        self.optim_state.m = self.optim_state.m:cuda()
+        self.optim_state.v = self.optim_state.v:cuda()
+        self.optim_state.denom = self.optim_state.denom:cuda()
+    end
     self.criterion:cuda()
     self.model:cuda()
 
@@ -310,6 +316,7 @@ function ConvNet:cuda()
     self.parameters, self.gradParameters = self.model:getParameters()
     -- self.parameters = self.parameters:double()
     -- self.gradParameters = self.gradParameters:double()
+
     cuda = true
 end
 
