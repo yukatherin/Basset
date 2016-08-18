@@ -78,8 +78,10 @@ print(string.format("loss  %.3f", loss))
 for yi=1,#roc_points do
     local roc_file = string.format('roc%d.txt', yi)
     local roc_out = io.open(roc_file, 'w')
-    for pi = 1,(#(roc_points[yi]))[1] do
-        roc_out:write(string.format("%f\t%f\n", roc_points[yi][pi][1], roc_points[yi][pi][2]))
+    if roc_points[yi] ~= nil then
+        for pi = 1,(#(roc_points[yi]))[1] do
+            roc_out:write(string.format("%f\t%f\n", roc_points[yi][pi][1], roc_points[yi][pi][2]))
+        end
     end
     roc_out:close()
 end
