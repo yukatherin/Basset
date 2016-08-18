@@ -137,31 +137,22 @@ def main():
 
             # print table lines
             for ti in range(len(alt_sad)):
-                if options.index_snp and options.score:
-                    cols = (snp.rsid, snp.index_snp, snp.score, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
-                    if options.csv:
-                        print >> sad_out, ','.join([str(c) for c in cols])
-                    else:
-                        print >> sad_out, '%-13s %-13s %5.3f %6s %6s %12s %6.4f %6.4f %7.4f' % cols
+                # set index SNP
+                snp_is = '%-13s' % '.'
+                if options.index_snp:
+                    snp_is = '%-13s' % snp.index_snp
 
-                elif options.index_snp:
-                    cols = (snp.rsid, snp.index_snp, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
-                    if options.csv:
-                        print >> sad_out, ','.join([str(c) for c in cols])
-                    else:
-                        print >> sad_out, '%-13s %-13s %6s %6s %12s %6.4f %6.4f %7.4f' % cols
-                elif options.score:
-                    cols = (snp.rsid, snp.score, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
-                    if options.csv:
-                        print >> sad_out, ','.join([str(c) for c in cols])
-                    else:
-                        print >> sad_out, '%-13s %5.3f %6s %6s %12s %6.4f %6.4f %7.4f' % cols
+                # set score
+                snp_score = '%5s' % '.'
+                if options.score:
+                    snp_score = '%5.3f' % snp.score
+
+                # print line
+                cols = (snp.rsid, snp_is, snp_score, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
+                if options.csv:
+                    print >> sad_out, ','.join([str(c) for c in cols])
                 else:
-                    cols = (snp.rsid, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
-                    if options.csv:
-                        print >> sad_out, ','.join([str(c) for c in cols])
-                    else:
-                        print >> sad_out, '%-13s %6s %6s %12s %6.4f %6.4f %7.4f' % cols
+                    print >> sad_out, '%-13s %s %5s %6s %6s %12s %6.4f %6.4f %7.4f' % cols
 
     sad_out.close()
 
