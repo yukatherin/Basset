@@ -101,7 +101,9 @@ def main():
     else:
         target_labels = [line.split()[0] for line in open(options.targets_file)]
 
-    if not options.dense_table:
+    if options.dense_table:
+        sad_out = open('%s/sad_table.txt' % options.out_dir, 'w')
+    else:
         header_cols = ('rsid', 'index', 'score', 'ref', 'alt', 'target', 'ref_pred', 'alt pred', 'sad')
         if options.csv:
             sad_out = open('%s/sad_table.csv' % options.out_dir, 'w')
