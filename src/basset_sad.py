@@ -101,13 +101,14 @@ def main():
     else:
         target_labels = [line.split()[0] for line in open(options.targets_file)]
 
-    header_cols = ('rsid', 'index', 'score', 'ref', 'alt', 'target', 'ref_pred', 'alt pred', 'sad')
-    if options.csv:
-        sad_out = open('%s/sad_table.csv' % options.out_dir, 'w')
-        print >> sad_out, ','.join(header_cols)
-    else:
-        sad_out = open('%s/sad_table.txt' % options.out_dir, 'w')
-        print >> sad_out, ' '.join(header_cols)
+    if not options.dense_table:
+        header_cols = ('rsid', 'index', 'score', 'ref', 'alt', 'target', 'ref_pred', 'alt pred', 'sad')
+        if options.csv:
+            sad_out = open('%s/sad_table.csv' % options.out_dir, 'w')
+            print >> sad_out, ','.join(header_cols)
+        else:
+            sad_out = open('%s/sad_table.txt' % options.out_dir, 'w')
+            print >> sad_out, ' '.join(header_cols)
 
     # hash by index snp
     sad_matrices = {}
