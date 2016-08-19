@@ -151,16 +151,15 @@ def main():
 
             # print table line(s)
             if options.dense_table:
+                cols = [snp.rsid, snp_is, snp_score, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al)]
+                for ti in range(len(alt_sad)):
+                    cols += ['%.4f'%ref_preds[ti], '%.4f'%alt_sad[ti]]
+
+                sep = ' '
                 if options.csv:
-                    cols = [snp.rsid, snp_is, snp_score, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al)]
-                    for ti in range(len(alt_sad)):
-                        cols += ['%.4f'%ref_preds[ti], '%.4f'%alt_sad[ti]]
+                    sep = ','
 
-                    sep = ' '
-                    if options.csv:
-                        sep = ','
-
-                    print >> sad_out, sep.join([str(c) for c in cols])
+                print >> sad_out, sep.join([str(c) for c in cols])
 
             else:
                 for ti in range(len(alt_sad)):
