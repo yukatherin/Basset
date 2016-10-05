@@ -212,62 +212,63 @@ def main():
         plt.close()
 
         # plot some descriptive heatmaps for each individual cell type
-        for ci in plot_targets:
+        for ci in range(seq_mod_preds.shape[3]):
             seq_mod_preds_cell = seq_mod_preds[si,:,:,ci]
             real_pred_cell = get_real_pred(seq_mod_preds_cell, seq)
 
             # print prediction
             print >> preds_out, '%s\t%d\t%.3f' % (header, ci, preds_heat[0,ci])
 
-            # compute matrices
-            norm_matrix = seq_mod_preds_cell - real_pred_cell
-            min_scores = seq_mod_preds_cell.min(axis=0)
-            max_scores = seq_mod_preds_cell.max(axis=0)
-            minmax_matrix = np.vstack([min_scores - real_pred_cell, max_scores - real_pred_cell])
+            if ci in plot_targets:
+                # compute matrices
+                norm_matrix = seq_mod_preds_cell - real_pred_cell
+                min_scores = seq_mod_preds_cell.min(axis=0)
+                max_scores = seq_mod_preds_cell.max(axis=0)
+                minmax_matrix = np.vstack([min_scores - real_pred_cell, max_scores - real_pred_cell])
 
-            # prepare figure
-            sns.set(style='white', font_scale=0.5)
-            sns.axes_style({'axes.linewidth':1})
-            spp = subplot_params(seq_mod_preds_cell.shape[1])
-            fig = plt.figure(figsize=(20,3))
-            ax_logo = plt.subplot2grid((3,spp['heat_cols']), (0,spp['logo_start']), colspan=(spp['logo_end']-spp['logo_start']))
-            ax_sad = plt.subplot2grid((3,spp['heat_cols']), (1,spp['sad_start']), colspan=(spp['sad_end']-spp['sad_start']))
-            ax_heat = plt.subplot2grid((3,spp['heat_cols']), (2,0), colspan=spp['heat_cols'])
+                # prepare figure
+                sns.set(style='white', font_scale=0.5)
+                sns.axes_style({'axes.linewidth':1})
+                spp = subplot_params(seq_mod_preds_cell.shape[1])
+                fig = plt.figure(figsize=(20,3))
+                ax_logo = plt.subplot2grid((3,spp['heat_cols']), (0,spp['logo_start']), colspan=(spp['logo_end']-spp['logo_start']))
+                ax_sad = plt.subplot2grid((3,spp['heat_cols']), (1,spp['sad_start']), colspan=(spp['sad_end']-spp['sad_start']))
+                ax_heat = plt.subplot2grid((3,spp['heat_cols']), (2,0), colspan=spp['heat_cols'])
 
-            # print a WebLogo of the sequence
-            vlim = max(options.min_limit, abs(minmax_matrix).max())
-            if options.gain_height:
-                seq_heights = 0.25 + 1.75/vlim*(abs(minmax_matrix).max(axis=0))
-            else:
-                seq_heights = 0.25 + 1.75/vlim*(-minmax_matrix[0])
-            logo_eps = '%s/%s_c%d_seq.eps' % (options.out_dir, header_filename(header), ci)
-            seq_logo(seq, seq_heights, logo_eps, color_mode='meme')
+                # print a WebLogo of the sequence
+                vlim = max(options.min_limit, abs(minmax_matrix).max())
+                if options.gain_height:
+                    seq_heights = 0.25 + 1.75/vlim*(abs(minmax_matrix).max(axis=0))
+                else:
+                    seq_heights = 0.25 + 1.75/vlim*(-minmax_matrix[0])
+                logo_eps = '%s/%s_c%d_seq.eps' % (options.out_dir, header_filename(header), ci)
+                seq_logo(seq, seq_heights, logo_eps, color_mode='meme')
 
-            # add to figure
-            logo_png = '%s.png' % logo_eps[:-4]
-            subprocess.call('convert -density 600 %s %s' % (logo_eps, logo_png), shell=True)
-            logo = Image.open(logo_png)
-            ax_logo.imshow(logo)
-            ax_logo.set_axis_off()
+                # add to figure
+                logo_png = '%s.png' % logo_eps[:-4]
+                subprocess.call('convert -density 600 %s %s' % (logo_eps, logo_png), shell=True)
+                logo = Image.open(logo_png)
+                ax_logo.imshow(logo)
+                ax_logo.set_axis_off()
 
-            # plot loss and gain SAD scores
-            ax_sad.plot(-minmax_matrix[0], c=rdbu[0], label='loss', linewidth=1)
-            ax_sad.plot(minmax_matrix[1], c=rdbu[-1], label='gain', linewidth=1)
-            ax_sad.set_xlim(0,minmax_matrix.shape[1])
-            ax_sad.legend()
-            # ax_sad.grid(True, linestyle=':')
-            for axis in ['top','bottom','left','right']:
-                ax_sad.spines[axis].set_linewidth(0.5)
+                # plot loss and gain SAD scores
+                ax_sad.plot(-minmax_matrix[0], c=rdbu[0], label='loss', linewidth=1)
+                ax_sad.plot(minmax_matrix[1], c=rdbu[-1], label='gain', linewidth=1)
+                ax_sad.set_xlim(0,minmax_matrix.shape[1])
+                ax_sad.legend()
+                # ax_sad.grid(True, linestyle=':')
+                for axis in ['top','bottom','left','right']:
+                    ax_sad.spines[axis].set_linewidth(0.5)
 
-            # plot real-normalized scores
-            vlim = max(options.min_limit, abs(norm_matrix).max())
-            sns.heatmap(norm_matrix, linewidths=0, cmap='RdBu_r', vmin=-vlim, vmax=vlim, xticklabels=False, ax=ax_heat)
-            ax_heat.yaxis.set_ticklabels('TGCA', rotation='horizontal') # , size=10)
+                # plot real-normalized scores
+                vlim = max(options.min_limit, abs(norm_matrix).max())
+                sns.heatmap(norm_matrix, linewidths=0, cmap='RdBu_r', vmin=-vlim, vmax=vlim, xticklabels=False, ax=ax_heat)
+                ax_heat.yaxis.set_ticklabels('TGCA', rotation='horizontal') # , size=10)
 
-            # save final figure
-            plt.tight_layout()
-            plt.savefig('%s/%s_c%d_heat.pdf' % (options.out_dir,header.replace(':','_'), ci), dpi=300)
-            plt.close()
+                # save final figure
+                plt.tight_layout()
+                plt.savefig('%s/%s_c%d_heat.pdf' % (options.out_dir,header.replace(':','_'), ci), dpi=300)
+                plt.close()
 
 
         #################################################################
