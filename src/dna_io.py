@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import sys
 from collections import OrderedDict
 
@@ -87,8 +88,8 @@ def check_order(seq_vecs, fasta_file):
         try:
             assert(fasta_seqs[i] == real_seqs[i])
         except:
-            print fasta_seqs[i]
-            print real_seqs[i]
+            print(fasta_seqs[i])
+            print(real_seqs[i])
             exit()
 
 
@@ -206,7 +207,7 @@ def hash_scores(scores_file):
         try:
             seq_scores[a[0]] = np.array([float(a[i]) for i in range(1,len(a))])
         except:
-            print >> sys.stderr, 'Ignoring header line'
+            print('Ignoring header line', file=sys.stderr)
 
     # consider converting the scores to integers
     int_scores = True
@@ -472,6 +473,6 @@ def vecs2dna(seq_vecs):
             elif seq_vecs[i,:,j].sum() == 1:
                 seq_list[j] = 'N'
             else:
-                print >> sys.stderr, 'Malformed position vector: ', seq_vecs[i,:,j], 'for sequence %d position %d' % (i,j)
+                print('Malformed position vector: ', seq_vecs[i,:,j], 'for sequence %d position %d' % (i,j), file=sys.stderr)
         seqs.append(''.join(seq_list))
     return seqs

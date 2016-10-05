@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 from optparse import OptionParser
 import pdb, os, subprocess
 
@@ -33,7 +34,7 @@ def main():
     parser.add_option('--f1', dest='genome1_fasta', default=None, help='Genome FASTA which which major allele sequences will be drawn')
     parser.add_option('--f2', dest='genome2_fasta', default=None, help='Genome FASTA which which minor allele sequences will be drawn')
     parser.add_option('-i', dest='index_snp', default=False, action='store_true', help='SNPs are labeled with their index SNP as column 6 [Default: %default]')
-    parser.add_option('-l', dest='seq_len', type='int', default=600, help='Sequence length provided to the model [Default: %default]')
+    parser.add_option('-l', dest='seq_len', type='int', default=1000, help='Sequence length provided to the model [Default: %default]')
     parser.add_option('-m', dest='min_limit', default=0.1, type='float', help='Minimum heatmap limit [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='sad', help='Output directory for tables and plots [Default: %default]')
     parser.add_option('-s', dest='score', default=False, action='store_true', help='SNPs are labeled with scores as column 7 [Default: %default]')
@@ -62,7 +63,7 @@ def main():
         seq_vecs, seqs, seq_headers, snps = vcf.snps2_seq1(snps, options.seq_len, options.genome1_fasta, options.genome2_fasta)
 
     # reshape sequences for torch
-    seq_vecs = seq_vecs.reshape((seq_vecs.shape[0],4,1,seq_vecs.shape[1]/4))
+    seq_vecs = seq_vecs.reshape((seq_vecs.shape[0],4,1,seq_vecs.shape[1]//4))
 
     # write to HDF5
     h5f = h5py.File('%s/model_in.h5'%options.out_dir, 'w')
@@ -83,7 +84,7 @@ def main():
 
         options.model_hdf5_file = '%s/model_out.txt' % options.out_dir
         cmd = 'basset_predict.lua -rc %s %s %s/model_in.h5 %s' % (cuda_str, model_th, options.out_dir, options.model_hdf5_file)
-        print cmd
+        print(cmd)
         subprocess.call(cmd, shell=True)
 
     # read in predictions
@@ -107,10 +108,10 @@ def main():
         header_cols = ('rsid', 'index', 'score', 'ref', 'alt', 'target', 'ref_pred', 'alt pred', 'sad')
         if options.csv:
             sad_out = open('%s/sad_table.csv' % options.out_dir, 'w')
-            print >> sad_out, ','.join(header_cols)
+            print(','.join(header_cols), file=sad_out)
         else:
             sad_out = open('%s/sad_table.txt' % options.out_dir, 'w')
-            print >> sad_out, ' '.join(header_cols)
+            print(' '.join(header_cols), file=sad_out)
 
     # hash by index snp
     sad_matrices = {}
@@ -159,15 +160,15 @@ def main():
                 if options.csv:
                     sep = ','
 
-                print >> sad_out, sep.join([str(c) for c in cols])
+                print(sep.join([str(c) for c in cols]), file=sad_out)
 
             else:
                 for ti in range(len(alt_sad)):
                     cols = (snp.rsid, snp_is, snp_score, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
                     if options.csv:
-                        print >> sad_out, ','.join([str(c) for c in cols])
+                        print(','.join([str(c) for c in cols]), file=sad_out)
                     else:
-                        print >> sad_out, '%-13s %s %5s %6s %6s %12s %6.4f %6.4f %7.4f' % cols
+                        print('%-13s %s %5s %6s %6s %12s %6.4f %6.4f %7.4f' % cols, file=sad_out)
 
     sad_out.close()
 
@@ -179,7 +180,7 @@ def main():
         for ii in sad_matrices:
             # convert fully to numpy arrays
             sad_matrix = abs(np.array(sad_matrices[ii]))
-            print ii, sad_matrix.shape
+            print(ii, sad_matrix.shape)
 
             if sad_matrix.shape[0] > 1:
                 vlim = max(options.min_limit, sad_matrix.max())

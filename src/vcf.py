@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 from optparse import OptionParser
 import sys
 
@@ -33,8 +34,8 @@ def snps_seq1(snps, seq_len, genome_fasta):
         seq_vecs (array) : one hot coded sequences surrounding the SNPs
         seq_headers [str] : headers for sequences
     '''
-    left_len = seq_len/2 - 1
-    right_len = seq_len/2
+    left_len = seq_len//2 - 1
+    right_len = seq_len//2
 
     # open genome FASTA
     genome = pysam.Fastafile(genome_fasta)
@@ -70,11 +71,11 @@ def snps_seq1(snps, seq_len, genome_fasta):
         seq_ref = seq[left_len:left_len+len(snp.ref_allele)]
         if seq_ref != snp.ref_allele:
             if seq_ref not in snp.alt_alleles:
-                print >> sys.stderr, 'WARNING: Skipping %s - neither allele matches reference genome: %s vs %s' % (snp.rsid, snp.ref_allele, seq_ref)
+                print('WARNING: Skipping %s - neither allele matches reference genome: %s vs %s' % (snp.rsid, snp.ref_allele, seq_ref), file=sys.stderr)
                 continue
 
             else:
-                print >> sys.stderr, 'WARNING: %s - alt (as opposed to ref) allele matches reference genome; changing reference genome to match.' % (snp.rsid)
+                print('WARNING: %s - alt (as opposed to ref) allele matches reference genome; changing reference genome to match.' % (snp.rsid), file=sys.stderr)
 
                 # remove alt allele and include ref allele
                 seq = seq[:left_len] + snp.ref_allele + seq[left_len+len(seq_ref):]
@@ -145,7 +146,7 @@ def snps2_seq1(snps, seq_len, genome1_fasta, genome2_fasta):
 
     for snp in snps:
         if len(snp.alt_alleles) > 1:
-            print >> sys.stderr, 'Major/minor genome mode requires only two alleles: %s' % snp.rsid
+            print('Major/minor genome mode requires only two alleles: %s' % snp.rsid, file=sys.stderr)
             exit(1)
         alt_al = snp.alt_alleles[0]
 
@@ -166,7 +167,7 @@ def snps2_seq1(snps, seq_len, genome1_fasta, genome2_fasta):
         # verify that ref allele matches ref sequence
         seq_ref_snp = seq_ref[left_len:left_len+len(snp.ref_allele)]
         if seq_ref_snp != snp.ref_allele:
-            print >> sys.stderr, 'WARNING: Major allele SNP %s doesnt match reference genome: %s vs %s' % (snp.rsid, snp.ref_allele, seq_ref_snp)
+            print('WARNING: Major allele SNP %s doesnt match reference genome: %s vs %s' % (snp.rsid, snp.ref_allele, seq_ref_snp), file=sys.stderr)
             exit(1)
 
 
@@ -187,7 +188,7 @@ def snps2_seq1(snps, seq_len, genome1_fasta, genome2_fasta):
         # verify that ref allele matches ref sequence
         seq_alt_snp = seq_alt[left_len:left_len+len(alt_al)]
         if seq_alt_snp != alt_al:
-            print >> sys.stderr, 'WARNING: Minor allele SNP %s doesnt match reference genome: %s vs %s' % (snp.rsid, snp.alt_alleles[0], seq_alt_snp)
+            print('WARNING: Minor allele SNP %s doesnt match reference genome: %s vs %s' % (snp.rsid, snp.alt_alleles[0], seq_alt_snp), file=sys.stderr)
             exit(1)
 
 
