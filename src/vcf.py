@@ -223,12 +223,12 @@ def dna_length_1hot(seq, length):
 
     if length < len(seq):
         # trim the sequence
-        seq_trim = (len(seq)-length)/2
+        seq_trim = (len(seq)-length)//2
         seq = seq[seq_trim:seq_trim+length]
 
     elif length > len(seq):
         # extend with N's
-        nfront = (length-len(seq))/2
+        nfront = (length-len(seq))//2
         nback = length - len(seq) - nfront
         seq = 'N'*nfront + seq + 'N'*nback
 
