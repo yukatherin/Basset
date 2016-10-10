@@ -22,7 +22,7 @@ def cap_allele(allele, cap=5):
     return allele
 
 
-def snps_seq1(snps, seq_len, genome_fasta):
+def snps_seq1(snps, seq_len, genome_fasta, return_seqs=False):
     ''' Produce an array of one hot coded sequences for a list of SNPs.
 
     Attrs:
@@ -33,6 +33,7 @@ def snps_seq1(snps, seq_len, genome_fasta):
     Return:
         seq_vecs (array) : one hot coded sequences surrounding the SNPs
         seq_headers [str] : headers for sequences
+        seq_snps [SNP] : list of used SNPs
     '''
     left_len = seq_len//2 - 1
     right_len = seq_len//2
@@ -89,7 +90,8 @@ def snps_seq1(snps, seq_len, genome_fasta):
         # one hot code ref allele
         seq_vecs_ref, seq_ref = dna_length_1hot(seq, seq_len)
         seq_vecs_list.append(seq_vecs_ref)
-        seqs.append(seq_ref)
+        if return_seqs:
+            seqs.append(seq_ref)
 
         # name ref allele
         seq_headers.append('%s_%s' % (snp.rsid, cap_allele(snp.ref_allele)))
@@ -101,7 +103,8 @@ def snps_seq1(snps, seq_len, genome_fasta):
             # one hot code
             seq_vecs_alt, seq_alt = dna_length_1hot(seq_alt, seq_len)
             seq_vecs_list.append(seq_vecs_alt)
-            seqs.append(seq_alt)
+            if return_seqs:
+                seqs.append(seq_alt)
 
             # name
             seq_headers.append('%s_%s' % (snp.rsid, cap_allele(alt_al)))
@@ -109,10 +112,13 @@ def snps_seq1(snps, seq_len, genome_fasta):
     # stack
     seq_vecs = np.vstack(seq_vecs_list)
 
-    return seq_vecs, seqs, seq_headers, seq_snps
+    if return_seqs:
+        return seq_vecs, seq_headers, seq_snps, seqs
+    else:
+        return seq_vecs, seq_headers, seq_snps
 
 
-def snps2_seq1(snps, seq_len, genome1_fasta, genome2_fasta):
+def snps2_seq1(snps, seq_len, genome1_fasta, genome2_fasta, return_seqs=False):
     ''' Produce an array of one hot coded sequences for a list of SNPs.
 
     Attrs:
@@ -124,6 +130,7 @@ def snps2_seq1(snps, seq_len, genome1_fasta, genome2_fasta):
     Return:
         seq_vecs (array) : one hot coded sequences surrounding the SNPs
         seq_headers [str] : headers for sequences
+        seq_snps [SNP] : list of used SNPs
     '''
     left_len = seq_len/2 - 1
     right_len = seq_len/2
@@ -197,7 +204,8 @@ def snps2_seq1(snps, seq_len, genome1_fasta, genome2_fasta):
         # one hot code ref allele
         seq_vecs_ref, seq_ref = dna_length_1hot(seq_ref, seq_len)
         seq_vecs_list.append(seq_vecs_ref)
-        seqs.append(seq_ref)
+        if return_seqs:
+            seqs.append(seq_ref)
 
         # name ref allele
         seq_headers.append('%s_%s' % (snp.rsid, cap_allele(snp.ref_allele)))
@@ -206,7 +214,8 @@ def snps2_seq1(snps, seq_len, genome1_fasta, genome2_fasta):
         # one hot code alt allele
         seq_vecs_alt, seq_alt = dna_length_1hot(seq_alt, seq_len)
         seq_vecs_list.append(seq_vecs_alt)
-        seqs.append(seq_alt)
+        if return_seqs:
+            seqs.append(seq_alt)
 
         # name
         seq_headers.append('%s_%s' % (snp.rsid, cap_allele(alt_al)))
@@ -214,7 +223,10 @@ def snps2_seq1(snps, seq_len, genome1_fasta, genome2_fasta):
     # stack
     seq_vecs = np.vstack(seq_vecs_list)
 
-    return seq_vecs, seqs, seq_headers, seq_snps
+    if return_seqs:
+        return seq_vecs, seq_headers, seq_snps, seqs
+    else:
+        return seq_vecs, seq_headers, seq_snps
 
 
 def dna_length_1hot(seq, length):

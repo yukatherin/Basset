@@ -55,9 +55,9 @@ def main():
 
     # get one hot coded input sequences
     if not options.genome1_fasta or not options.genome2_fasta:
-        seqs_1hot, seqs, seq_headers, snps = vcf.snps_seq1(snps, options.seq_len, options.genome_fasta)
+        seqs_1hot, seq_headers, snps, seqs = vcf.snps_seq1(snps, options.seq_len, options.genome_fasta, return_seqs=True)
     else:
-        seqs_1hot, seqs, seq_headers, snps = vcf.snps2_seq1(snps, options.seq_len, options.genome1_fasta, options.genome2_fasta)
+        seqs_1hot, seq_headers, snps, seqs = vcf.snps2_seq1(snps, options.seq_len, options.genome1_fasta, options.genome2_fasta, return_seqs=True)
 
     # reshape sequences for torch
     seqs_1hot = seqs_1hot.reshape((seqs_1hot.shape[0],4,1,seqs_1hot.shape[1]/4))
