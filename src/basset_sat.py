@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 from optparse import OptionParser
 import copy, os, pdb, random, subprocess, sys
 
@@ -155,7 +156,7 @@ def main():
             gpgpu_str = '-cuda'
 
         torch_cmd = 'basset_sat_predict.lua %s -center_nt %d %s %s %s' % (gpgpu_str, options.center_nt, model_file, model_input_hdf5, options.model_hdf5_file)
-        print torch_cmd
+        print(torch_cmd)
         subprocess.call(torch_cmd, shell=True)
 
 
@@ -217,7 +218,7 @@ def main():
             real_pred_cell = get_real_pred(seq_mod_preds_cell, seq)
 
             # print prediction
-            print >> preds_out, '%s\t%d\t%.3f' % (header, ci, preds_heat[0,ci])
+            print('%s\t%d\t%.3f' % (header, ci, preds_heat[0,ci]), file=preds_out)
 
             if ci in plot_targets:
                 # compute matrices
@@ -290,7 +291,7 @@ def main():
 
             for pos in range(seq_mod_preds_cell.shape[1]):
                 cols = [header, delta_start+pos, ci, loss_matrix[pos], gain_matrix[pos]]
-                print >> table_out, '\t'.join([str(c) for c in cols])
+                print('\t'.join([str(c) for c in cols]), file=table_out)
 
     table_out.close()
     preds_out.close()
