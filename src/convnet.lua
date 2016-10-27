@@ -153,8 +153,15 @@ function ConvNet:build(job, init_depth, init_len, num_targets)
     for i = 1,self.conv_layers do
         -- convolution
         if i == 1 or self.conv_conn[i-1] == 1 then
+            -- TEMP padding
+            out_width = math.ceil(seq_len / self.conv_filter_strides[i])
+            pad_width = (out_width-1) * self.conv_filter_strides[i] + self.conv_filter_sizes[i] - seq_len
+            -- pad_left = math.floor(pad_width / 2)
+
             -- fully connected convolution
-            self.model:add(nn.SpatialConvolution(depth, self.conv_filters[i], self.conv_filter_sizes[i], 1))
+            -- self.model:add(nn.SpatialConvolution(depth, self.conv_filters[i], self.conv_filter_sizes[i], 1))
+            self.model:add(nn.SpatialConvolution(depth, self.conv_filters[i], self.conv_filter_sizes[i], 1, self.conv_filter_strides[i], 1, pad_width, 0))
+
         else
             -- randomly connected convolution
             num_to = torch.round(depth*self.conv_conn[i-1])
@@ -162,8 +169,9 @@ function ConvNet:build(job, init_depth, init_len, num_targets)
             self.model:add(nn.SpatialConvolutionMap(conn_matrix, self.conv_filter_sizes[i], 1))
         end
 
+        -- TEMP: padding instead
         -- update sequence length for filter pass
-        seq_len = seq_len - self.conv_filter_sizes[i] + 1
+        -- seq_len = seq_len - self.conv_filter_sizes[i] + 1
 
         -- batch normalization (need to figure out how to ditch the bias above)
         if self.batch_normalize then
@@ -812,6 +820,9 @@ function ConvNet:setStructureParams(job)
             self.conv_filter_sizes[i] = math.ceil(job.conv_size_scale * self.conv_filter_sizes[i-1])
         end
     end
+
+    -- convolution filter strides
+    self.conv_filter_strides = table_ext(job.conv_filter_strides, 1, self.conv_layers)
 
     -- pooling widths
     self.pool_width = table_ext(job.pool_width, 1, self.conv_layers)
