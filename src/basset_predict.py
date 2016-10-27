@@ -6,12 +6,11 @@ import h5py
 
 import dna_io
 
-################################################################################
-# basset_predict.py
-#
-# Perform an in silico saturated mutagenesis of the given test sequences using
-# the given model.
-################################################################################
+'''
+basset_predict.py
+
+Predict a set of test sequences.
+'''
 
 ################################################################################
 # main
