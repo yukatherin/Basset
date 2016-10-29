@@ -5,6 +5,8 @@ import copy, os, pdb, random, subprocess, sys
 
 import h5py
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from PIL import Image
 import seaborn as sns
@@ -98,7 +100,7 @@ def main():
                 targets = targets[sample_i]
 
         # reshape sequences for torch
-        seqs_1hot = seqs_1hot.reshape((seqs_1hot.shape[0],4,1,seqs_1hot.shape[1]/4))
+        seqs_1hot = seqs_1hot.reshape((seqs_1hot.shape[0],4,1,seqs_1hot.shape[1]//4))
 
         # write as test data to a HDF5 file
         h5f = h5py.File(model_input_hdf5, 'w')
