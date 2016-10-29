@@ -134,11 +134,11 @@ def dna_one_hot(seq, seq_len=None, flatten=True):
     else:
         if seq_len <= len(seq):
             # trim the sequence
-            seq_trim = (len(seq)-seq_len)/2
+            seq_trim = (len(seq)-seq_len) // 2
             seq = seq[seq_trim:seq_trim+seq_len]
             seq_start = 0
         else:
-            seq_start = (seq_len-len(seq))/2
+            seq_start = (seq_len-len(seq)) // 2
 
     seq = seq.upper()
 
