@@ -156,11 +156,12 @@ function ConvNet:build(job, init_depth, init_len, num_targets)
             -- TEMP padding
             out_width = math.ceil(seq_len / self.conv_filter_strides[i])
             pad_width = (out_width-1) * self.conv_filter_strides[i] + self.conv_filter_sizes[i] - seq_len
-            -- pad_left = math.floor(pad_width / 2)
+            pad_left = math.floor(pad_width / 2)
+            print(string.format("seq_len: %d, filter_size: %d, pad_width: %d", seq_len, self.conv_filter_sizes[i], pad_width))
 
             -- fully connected convolution
             -- self.model:add(nn.SpatialConvolution(depth, self.conv_filters[i], self.conv_filter_sizes[i], 1))
-            self.model:add(nn.SpatialConvolution(depth, self.conv_filters[i], self.conv_filter_sizes[i], 1, self.conv_filter_strides[i], 1, pad_width, 0))
+            self.model:add(nn.SpatialConvolution(depth, self.conv_filters[i], self.conv_filter_sizes[i], 1, self.conv_filter_strides[i], 1, pad_left, 0))
 
         else
             -- randomly connected convolution
