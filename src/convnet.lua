@@ -158,14 +158,14 @@ function ConvNet:build(job, init_depth, init_len, num_targets)
             pad_width = (out_width-1) * self.conv_filter_strides[i] + self.conv_filter_sizes[i] - seq_len
             pad_left = math.floor(pad_width / 2)
 
+            -- TEMP
+            print(string.format("seq_len: %d, filter_size: %d, pad_width: %d", seq_len, self.conv_filter_sizes[i], pad_width))
+
             -- check for even padding
             if pad_width % 2 ~= 0 then
                 print(string.format('Pad width %d must divide evenly between left and right', pad_width))
                 exit(1)
             end
-
-            -- TEMP
-            print(string.format("seq_len: %d, filter_size: %d, pad_width: %d", seq_len, self.conv_filter_sizes[i], pad_width))
 
             -- fully connected convolution
             -- self.model:add(nn.SpatialConvolution(depth, self.conv_filters[i], self.conv_filter_sizes[i], 1))
