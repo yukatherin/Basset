@@ -153,13 +153,18 @@ function ConvNet:build(job, init_depth, init_len, num_targets)
     for i = 1,self.conv_layers do
         -- convolution
         if i == 1 or self.conv_conn[i-1] == 1 then
-            -- TEMP padding
+            -- determine padding
             out_width = math.ceil(seq_len / self.conv_filter_strides[i])
             pad_width = (out_width-1) * self.conv_filter_strides[i] + self.conv_filter_sizes[i] - seq_len
+            pad_left = math.floor(pad_width / 2)
+
+            -- check for even padding
             if pad_width % 2 ~= 0 then
                 print(string.format('Pad width %d must divide evenly between left and right', pad_width))
                 exit(1)
-            pad_left = math.floor(pad_width / 2)
+            end
+
+            -- TEMP
             print(string.format("seq_len: %d, filter_size: %d, pad_width: %d", seq_len, self.conv_filter_sizes[i], pad_width))
 
             -- fully connected convolution
