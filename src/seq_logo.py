@@ -26,7 +26,8 @@ def main():
 
 def seq_logo(seq, heights, out_eps, weblogo_args='', color_mode='classic'):
     # print the sequence to a temp fasta file
-    fasta_fd, fasta_file = tempfile.mkstemp()
+    fasta_fd, fasta_file = tempfile.mkstemp()   # TEMP
+    fasta_file = 'temp.fa'   # TEMP
     fasta_out = open(fasta_file, 'w')
     print('>seq\n%s' % seq, file=fasta_out)
     fasta_out.close()
@@ -46,6 +47,7 @@ def seq_logo(seq, heights, out_eps, weblogo_args='', color_mode='classic'):
     # print figure to a temp eps file
     eps_fd, eps_file = tempfile.mkstemp()
     weblogo_cmd = 'weblogo --errorbars NO --show-xaxis NO --show-yaxis NO --fineprint "" %s -n %d %s < %s > %s' % (color_str, len(seq), weblogo_args, fasta_file, eps_file)
+    print(weblogo_cmd)
     subprocess.call(weblogo_cmd, shell=True)
 
     # copy eps file over and write in my own heights
@@ -59,25 +61,25 @@ def seq_logo(seq, heights, out_eps, weblogo_args='', color_mode='classic'):
 
         # nt column begins
         if start_stack_match:
-            print(line, file=out_eps_open)
+            print(line, file=out_eps_open, end='')
 
             # loop over 4 nt's
             for i in range(4):
                 line = weblogo_eps_in.readline()
                 a = line.split()
 
-                nt = a[2][1:-1]
+                nt = a[-2][1:-1]
                 if nt != seq[si]:
-                    print(line, file=out_eps_open)
+                    print(line, file=out_eps_open, end='')
                 else:
                     # change the nt of seq
                     a[1] = '%.6f' % heights[si]
-                    print(' %s' % ' '.join(a), file=out_eps_open)
+                    print(' %s' % ' '.join(a), file=out_eps_open, end='')
 
             # move to next nucleotide
             si += 1
         else:
-            print(line, file=out_eps_open)
+            print(line, file=out_eps_open, end='')
 
         # advance to next line
         line = weblogo_eps_in.readline()
