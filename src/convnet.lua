@@ -156,6 +156,9 @@ function ConvNet:build(job, init_depth, init_len, num_targets)
             -- TEMP padding
             out_width = math.ceil(seq_len / self.conv_filter_strides[i])
             pad_width = (out_width-1) * self.conv_filter_strides[i] + self.conv_filter_sizes[i] - seq_len
+            if pad_width % 2 ~= 0 then
+                print(string.format('Pad width %d must divide evenly between left and right', pad_width))
+                exit(1)
             pad_left = math.floor(pad_width / 2)
             print(string.format("seq_len: %d, filter_size: %d, pad_width: %d", seq_len, self.conv_filter_sizes[i], pad_width))
 
@@ -170,9 +173,8 @@ function ConvNet:build(job, init_depth, init_len, num_targets)
             self.model:add(nn.SpatialConvolutionMap(conn_matrix, self.conv_filter_sizes[i], 1))
         end
 
-        -- TEMP: padding instead
         -- update sequence length for filter pass
-        -- seq_len = seq_len - self.conv_filter_sizes[i] + 1
+        seq_len = out_width
 
         -- batch normalization (need to figure out how to ditch the bias above)
         if self.batch_normalize then
