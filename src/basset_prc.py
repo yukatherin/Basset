@@ -40,11 +40,11 @@ def main():
     # input targets and predictions
     #############################################
     h5_in = h5py.File(hdf5_file)
-    targets = np.array(h5_in['test_out'])
+    targets = np.array(h5_in['test_out'], dtype='float16')
     target_labels = np.array(h5_in['target_labels'])
     h5_in.close()
 
-    preds = np.genfromtxt(preds_file, delimiter='\t')
+    preds = np.genfromtxt(preds_file, delimiter='\t', dtype='float16')
 
     #############################################
     # make all PRC plots
