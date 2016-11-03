@@ -35,6 +35,7 @@ def main():
     usage = 'usage: %prog [options] <model_file> <profile_file> <input_file>'
     parser = OptionParser(usage)
     parser.add_option('-a', dest='input_activity_file', help='Optional activity table corresponding to an input FASTA file')
+    parser.add_option('-e', dest='norm_even', default=False, action='store_true', help='Normalize the weights for the positive and negative datasets to be even [Default: %default]')
     parser.add_option('--cuda', dest='cuda', default=False, action='store_true', help='Run on GPGPU [Default: %default]')
     parser.add_option('--cudnn', dest='cudnn', default=False, action='store_true', help='Run on GPGPU w/cuDNN [Default: %default]')
     parser.add_option('-d', dest='model_out_file', default=None, help='Pre-computed model predictions output table [Default: %default]')
@@ -142,30 +143,59 @@ def main():
     # parse profile file
     #################################################################
     activity_profile = []
+    profile_weights = []
     target_labels = []
     for line in open(profile_file):
         a = line.split()
         ti = int(a[0])
         ta = float(a[1])
         if len(a) > 2:
-            tlabel = a[2]
+            tw = float(a[2])
+        else:
+            tw = 1
+        if len(a) > 3:
+            tlabel = a[3]
 
         while len(activity_profile) < ti:
             activity_profile.append(np.nan)
+            profile_weights.append(0)
             target_labels.append(None)
 
         activity_profile.append(ta)
+        profile_weights.append(tw)
         target_labels.append(tlabel)
 
     while len(activity_profile) < num_targets:
         activity_profile.append(np.nan)
+        profile_weights.append(0)
         target_labels.append(None)
 
     activity_profile = np.array(activity_profile)
+    profile_weights = np.array(profile_weights)
     target_labels = np.array(target_labels)
 
     profile_mask = np.logical_not(np.isnan(activity_profile))
 
+    if options.norm_even:
+        # compute weight sums
+        sum_on = 0
+        sum_off = 0
+        for ti in range(activity_profile.shape[0]):
+            if profile_mask[ti]:
+                if activity_profile[ti] > 0:
+                    sum_on += profile_weights[ti]
+                else:
+                    sum_off += profile_weights[ti]
+
+        # adjust weights
+        norm_on = (sum_on+sum_off) / sum_on
+        norm_off = (sum_on+sum_off) / sum_off
+        for ti in range(activity_profile.shape[0]):
+            if profile_mask[ti]:
+                if activity_profile[ti] > 0:
+                    profile_weights[ti] /= norm_on
+                else:
+                    profile_weights[ti] /= norm_off
 
     #################################################################
     # plot clustered heat map limited to relevant targets
@@ -188,9 +218,7 @@ def main():
     seqs_pdists = []
     for si in range(seqs_preds.shape[0]):
         # sd = np.power(seqs_preds[si,profile_mask]-activity_profile[profile_mask], 2).sum()
-        tmp = activity_profile[profile_mask]
-        tmp = seqs_preds[si,profile_mask]
-        sd = log_loss(activity_profile[profile_mask], seqs_preds[si,profile_mask])
+        sd = log_loss(activity_profile[profile_mask], seqs_preds[si,profile_mask], sample_weight=profile_weights[profile_mask])
         seqs_pdists.append(sd)
     seqs_pdists = np.array(seqs_pdists)
 
@@ -200,9 +228,10 @@ def main():
     # compute target distances
     seqs_tdists = []
     for si in range(seqs_preds.shape[0]):
-        sd = np.power(targets[si,profile_mask]-activity_profile[profile_mask], 2).sum()
-        # sd = log_loss(activity_profile[profile_mask], targets[si,profile_mask])
-        seqs_tdists.append(sd)
+        tdists = np.absolute(targets[si,profile_mask]-activity_profile[profile_mask])
+        tdists_weight = np.multiply(tdists, profile_weights[profile_mask])
+        td = tdists_weight.sum()
+        seqs_tdists.append(td)
     seqs_tdists = np.array(seqs_tdists)
 
     # print as table
