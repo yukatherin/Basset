@@ -41,7 +41,10 @@ def main():
     #############################################
     h5_in = h5py.File(hdf5_file)
     targets = h5_in['test_out']
-    target_labels = np.array(h5_in['target_labels'])
+    if type(h5_in['target_labels'][0]) == np.bytes_:
+        target_labels = np.array([label.decode('UTF-8') for label in h5_in['target_labels'])
+    else:
+        target_labels = np.array(h5_in['target_labels'])
 
     preds = np.genfromtxt(preds_file, delimiter='\t', dtype='float16')
 
