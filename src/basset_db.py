@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 from optparse import OptionParser
 from collections import OrderedDict
 import os
@@ -6,6 +7,8 @@ import random
 import subprocess
 
 import h5py
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -127,7 +130,7 @@ def main():
             add_str = '-add_motif %s' % options.add_motif
 
         torch_cmd = 'basset_db_predict.lua %s %s %s %s %s' % (add_str, motifs_hdf5_file, model_file, test_hdf5_file, options.model_hdf5_file)
-        print torch_cmd
+        print(torch_cmd)
         subprocess.call(torch_cmd, shell=True)
 
     # load model output
@@ -168,7 +171,7 @@ def main():
     for protein in db_motifs:
         for ti in range(scores_diffs.shape[1]):
             cols = (protein, ti, scores_diffs[mi,ti], preds_diffs[mi,ti])
-            print >> table_out, '%-10s  %3d  %6.3f  %6.3f' % cols
+            print('%-10s  %3d  %6.3f  %6.3f' % cols, file=table_out)
         mi += 1
 
     table_out.close()
@@ -201,7 +204,7 @@ def main():
         for protein in db_motifs:
             for fi in range(reprs_diffs[l].shape[1]):
                 cols = (protein, fi, reprs_diffs[l][mi,fi])
-                print >> table_out, '%-10s  %3d  %7.4f' % cols
+                print('%-10s  %3d  %7.4f' % cols, file=table_out)
             mi += 1
 
         table_out.close()
