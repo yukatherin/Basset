@@ -157,7 +157,7 @@ def main():
         elif options.cuda:
             gpgpu_str = '-cuda'
 
-        torch_cmd = 'basset_sat_predict.lua %s -center_nt %d %s %s %s' % (gpgpu_str, options.center_nt, model_file, model_input_hdf5, options.model_hdf5_file)
+        torch_cmd = 'basset_sat_predict.lua %s -rc -center_nt %d %s %s %s' % (gpgpu_str, options.center_nt, model_file, model_input_hdf5, options.model_hdf5_file)
         print(torch_cmd)
         subprocess.call(torch_cmd, shell=True)
 
@@ -204,7 +204,7 @@ def main():
         # plot predictions across all targets
         plt.figure(figsize=(20,3))
         sns.set(style='white', font_scale=1)
-        real_nt, pi = get_real_nt(seq_mod_preds[si,:,:,0], seq)
+        real_nt, pi = get_real_nt(seq)
         preds_heat = seq_mod_preds[si,real_nt,pi,:].reshape((1,-1))
         g = sns.heatmap(preds_heat, vmin=0, vmax=1, linewidths=0, xticklabels=target_labels, yticklabels=False, cbar_kws={"orientation": "horizontal"})
         for tick in g.get_xticklabels():
@@ -311,7 +311,7 @@ def header_filename(header):
     return header
 
 
-def get_real_nt(seq_mod_preds, seq):
+def get_real_nt(seq):
     ''' Return the real sequence prediction from the modified prediction matrix '''
     si = 0
     while seq[si] == 'N':

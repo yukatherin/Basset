@@ -23,6 +23,7 @@ cmd:option('-center_nt', 0, 'Mutate only the center nucleotides')
 cmd:option('-cuda', false, 'Run on GPGPU')
 cmd:option('-cudnn', false, 'Run on GPGPU w/ cuDNN')
 cmd:option('-norm', false, 'Normalize target predictions')
+cmd:option('-rc', false, 'Average forward and reverse complement')
 cmd:option('-pre_sigmoid', false, 'Measure changes pre-sigmoid')
 opt = cmd:parse(arg)
 
@@ -57,7 +58,7 @@ local fl = #convnet.model.modules - 1
 ----------------------------------------------------------------
 -- predict seqs
 convnet.model:evaluate()
-local preds, prepreds = convnet:predict(test_seqs, opt.batch, false, false)
+local preds, prepreds = convnet:predict(test_seqs, opt.batch, false, opt.rc)
 local num_targets = (#preds)[2]
 
 -- normalize predictions
@@ -120,7 +121,7 @@ for si=1,num_seqs do
 	end
 
 	-- predict modified sequences
-	local mod_preds, mod_prepreds = convnet:predict(seq_mods, opt.batch_size, true)
+	local mod_preds, mod_prepreds = convnet:predict(seq_mods, opt.batch_size, true, opt.rc)
 
     -- normalize predictions
     if opt.norm then
