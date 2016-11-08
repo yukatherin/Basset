@@ -47,7 +47,6 @@ def seq_logo(seq, heights, out_eps, weblogo_args='', color_mode='classic'):
     # print figure to a temp eps file
     eps_fd, eps_file = tempfile.mkstemp()
     weblogo_cmd = 'weblogo --errorbars NO --show-xaxis NO --show-yaxis NO --fineprint "" %s -n %d %s < %s > %s' % (color_str, len(seq), weblogo_args, fasta_file, eps_file)
-    print(weblogo_cmd)
     subprocess.call(weblogo_cmd, shell=True)
 
     # copy eps file over and write in my own heights
