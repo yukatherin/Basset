@@ -22,10 +22,6 @@ Measure the similarity between test sequences and a desired activity profile.
 
 Notes:
  -To examine all sequences, provide the FASTA as input and targets as -a.
-
-Todo:
- -if we have 0/1 activity profiles, consider binary cross entropy as the distance.
-
 '''
 
 ################################################################################
@@ -41,6 +37,7 @@ def main():
     parser.add_option('-d', dest='model_out_file', default=None, help='Pre-computed model predictions output table [Default: %default]')
     parser.add_option('-n', dest='num_dissect', default=10, type='int', help='Dissect the top n hits [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='profile', help='Output directory [Default: %default]')
+    parser.add_option('-z', dest='weight_zero', default=1.0, type='float', help='Adjust the weights for the zero samples by this value [Default: %default]')
     (options,args) = parser.parse_args()
 
     if len(args) != 3:
@@ -142,60 +139,7 @@ def main():
     #################################################################
     # parse profile file
     #################################################################
-    activity_profile = []
-    profile_weights = []
-    target_labels = []
-    for line in open(profile_file):
-        a = line.split()
-        ti = int(a[0])
-        ta = float(a[1])
-        if len(a) > 2:
-            tw = float(a[2])
-        else:
-            tw = 1
-        if len(a) > 3:
-            tlabel = a[3]
-
-        while len(activity_profile) < ti:
-            activity_profile.append(np.nan)
-            profile_weights.append(0)
-            target_labels.append(None)
-
-        activity_profile.append(ta)
-        profile_weights.append(tw)
-        target_labels.append(tlabel)
-
-    while len(activity_profile) < num_targets:
-        activity_profile.append(np.nan)
-        profile_weights.append(0)
-        target_labels.append(None)
-
-    activity_profile = np.array(activity_profile)
-    profile_weights = np.array(profile_weights)
-    target_labels = np.array(target_labels)
-
-    profile_mask = np.logical_not(np.isnan(activity_profile))
-
-    if options.norm_even:
-        # compute weight sums
-        sum_on = 0
-        sum_off = 0
-        for ti in range(activity_profile.shape[0]):
-            if profile_mask[ti]:
-                if activity_profile[ti] > 0:
-                    sum_on += profile_weights[ti]
-                else:
-                    sum_off += profile_weights[ti]
-
-        # adjust weights
-        norm_on = (sum_on+sum_off) / sum_on
-        norm_off = (sum_on+sum_off) / sum_off
-        for ti in range(activity_profile.shape[0]):
-            if profile_mask[ti]:
-                if activity_profile[ti] > 0:
-                    profile_weights[ti] /= norm_on
-                else:
-                    profile_weights[ti] /= norm_off
+    activity_profile, profile_weights, profile_mask, target_labels = load_profile(profile_file, num_targets, options.norm_even, options.weight_zero)
 
     #################################################################
     # plot clustered heat map limited to relevant targets
@@ -281,6 +225,71 @@ def main():
         plt.setp(ax.yaxis.get_majorticklabels(), rotation=-0)
         plt.savefig('%s/heat%d.pdf' % (options.out_dir,ni))
         plt.close()
+
+
+def load_profile(profile_file, num_targets, norm_even=False, weight_zero=1):
+    ''' Load the desired profile from file. '''
+
+    # read from file
+    activity_profile = []
+    profile_weights = []
+    target_labels = []
+    for line in open(profile_file):
+        a = line.split()
+        ti = int(a[0])
+        ta = float(a[1])
+        if len(a) > 2:
+            tw = float(a[2])
+        else:
+            tw = 1
+        if len(a) > 3:
+            tlabel = a[3]
+
+        while len(activity_profile) < ti:
+            activity_profile.append(np.nan)
+            profile_weights.append(0)
+            target_labels.append(None)
+
+        activity_profile.append(ta)
+        profile_weights.append(tw)
+        target_labels.append(tlabel)
+
+    while len(activity_profile) < num_targets:
+        activity_profile.append(np.nan)
+        profile_weights.append(0)
+        target_labels.append(None)
+
+    # convert to array
+    activity_profile = np.array(activity_profile)
+    profile_weights = np.array(profile_weights)
+    target_labels = np.array(target_labels)
+
+    # compute mask
+    profile_mask = np.logical_not(np.isnan(activity_profile))
+
+    # normalize positives versus zeros
+    if norm_even:
+        # compute weight sums
+        sum_on = 0
+        sum_off = 0
+        for ti in range(activity_profile.shape[0]):
+            if profile_mask[ti]:
+                if activity_profile[ti] > 0:
+                    sum_on += profile_weights[ti]
+                else:
+                    sum_off += profile_weights[ti]
+
+        # adjust weights
+        norm_on = sum_on / (sum_on+sum_off)
+        norm_off = weight_zero * sum_off / (sum_on+sum_off)
+        for ti in range(activity_profile.shape[0]):
+            if profile_mask[ti]:
+                if activity_profile[ti] > 0:
+                    profile_weights[ti] *= norm_on
+                else:
+                    profile_weights[ti] *= norm_off
+
+    return activity_profile, profile_weights, profile_mask, target_labels
 
 
 ################################################################################
