@@ -85,8 +85,8 @@ def main():
     # divide data
     #################################################################
     if options.counts:
-        test_count = options.test_pct
-        valid_count = options.valid_pct
+        test_count = int(options.test_pct)
+        valid_count = int(options.valid_pct)
     else:
         test_count = int(0.5 + options.test_pct * seqs.shape[0])
         valid_count = int(0.5 + options.valid_pct * seqs.shape[0])
