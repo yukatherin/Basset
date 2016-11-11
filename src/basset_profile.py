@@ -280,14 +280,18 @@ def load_profile(profile_file, num_targets, norm_even=False, weight_zero=1):
                     sum_off += profile_weights[ti]
 
         # adjust weights
-        norm_on = sum_on / (sum_on+sum_off)
-        norm_off = weight_zero * sum_off / (sum_on+sum_off)
         for ti in range(activity_profile.shape[0]):
             if profile_mask[ti]:
                 if activity_profile[ti] > 0:
-                    profile_weights[ti] *= norm_on
+                    profile_weights[ti] /= sum_on
                 else:
-                    profile_weights[ti] *= norm_off
+                    profile_weights[ti] /= sum_off
+
+    # up-weight zero's
+    if options.weight_zero:
+        for ti in range(activity_profile.shape[0]):
+            if profile_mask[ti] and activity_profile[ti] == 0:
+                profile_weights[ti] *= weight_zero
 
     return activity_profile, profile_weights, profile_mask, target_labels
 
