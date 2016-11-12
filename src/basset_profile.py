@@ -31,10 +31,11 @@ def main():
     usage = 'usage: %prog [options] <model_file> <profile_file> <input_file>'
     parser = OptionParser(usage)
     parser.add_option('-a', dest='input_activity_file', help='Optional activity table corresponding to an input FASTA file')
-    parser.add_option('-e', dest='norm_even', default=False, action='store_true', help='Normalize the weights for the positive and negative datasets to be even [Default: %default]')
     parser.add_option('--cuda', dest='cuda', default=False, action='store_true', help='Run on GPGPU [Default: %default]')
     parser.add_option('--cudnn', dest='cudnn', default=False, action='store_true', help='Run on GPGPU w/cuDNN [Default: %default]')
     parser.add_option('-d', dest='model_out_file', default=None, help='Pre-computed model predictions output table [Default: %default]')
+    parser.add_option('-e', dest='norm_even', default=False, action='store_true', help='Normalize the weights for the positive and negative datasets to be even [Default: %default]')
+    parser.add_option('-f', dest='font_heat', default=6, type='int', help='Heat map axis font size [Default: %default]')
     parser.add_option('-n', dest='num_dissect', default=10, type='int', help='Dissect the top n hits [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='profile', help='Output directory [Default: %default]')
     parser.add_option('-z', dest='weight_zero', default=1.0, type='float', help='Adjust the weights for the zero samples by this value [Default: %default]')
@@ -151,6 +152,8 @@ def main():
     plt.figure()
     g = sns.clustermap(np.transpose(seqs_preds_prof[seqs_sort_var[:1000]]), metric='euclidean', linewidths=0, yticklabels=target_labels[profile_mask], xticklabels=False)
     plt.setp(g.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
+    for label in g.ax_heatmap.yaxis.get_majorticklabels():
+        label.set_fontsize(options.font_heat)
     plt.savefig('%s/heat_clust.pdf' % options.out_dir)
     plt.close()
 
@@ -192,6 +195,8 @@ def main():
     plt.figure()
     g = sns.clustermap(np.transpose(seqs_preds_prof[seqs_sort_dist[:1000]]), col_cluster=False, metric='euclidean', linewidths=0, yticklabels=target_labels[profile_mask], xticklabels=False)
     plt.setp(g.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
+    for label in ax.yaxis.get_majorticklabels():
+        label.set_fontsize(options.font_heat)
     plt.savefig('%s/heat_rank.pdf' % options.out_dir)
     plt.close()
 
@@ -225,6 +230,8 @@ def main():
         ax = sns.heatmap(np.transpose(heat_mat), yticklabels=target_labels[profile_mask][profile_sort], xticklabels=['Desired', 'Experiment', 'Prediction'])
         plt.setp(ax.xaxis.get_majorticklabels(), rotation=-45)
         plt.setp(ax.yaxis.get_majorticklabels(), rotation=-0)
+        for label in ax.yaxis.get_majorticklabels():
+            label.set_fontsize(options.font_heat)
         plt.savefig('%s/heat%d.pdf' % (options.out_dir,ni))
         plt.close()
 
