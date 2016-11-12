@@ -211,7 +211,9 @@ def main():
         fasta_out.close()
 
         # saturated mutagenesis
-        cmd = 'basset_sat.py -%s -n 500 -o %s/satmut%d -t %s %s %s' % (gpgpu_str, options.out_dir, ni, satmut_targets, model_file, fasta_file)
+        if gpgpu_str != '':
+            gpgpu_str = '-%s' % gpgpu_str
+        cmd = 'basset_sat.py %s -n 500 -o %s/satmut%d -t %s %s %s' % (gpgpu_str, options.out_dir, ni, satmut_targets, model_file, fasta_file)
         subprocess.call(cmd, shell=True)
 
         # predictions and targets heat
