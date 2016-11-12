@@ -297,7 +297,7 @@ def load_profile(profile_file, num_targets, norm_even=False, weight_zero=1):
                     profile_weights[ti] /= sum_off
 
     # up-weight zero's
-    if options.weight_zero:
+    if weight_zero:
         for ti in range(activity_profile.shape[0]):
             if profile_mask[ti] and activity_profile[ti] == 0:
                 profile_weights[ti] *= weight_zero
