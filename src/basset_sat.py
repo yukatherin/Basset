@@ -5,8 +5,8 @@ import copy, os, pdb, random, subprocess, sys
 
 import h5py
 import numpy as np
-# import matplotlib
-# matplotlib.use('Agg')
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from PIL import Image
 import seaborn as sns
