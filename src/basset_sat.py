@@ -148,6 +148,9 @@ def main():
     #################################################################
     # Torch predict modifications
     #################################################################
+    if options.center_nt > len(seqs[0]):
+        options.center_nt = 0
+
     if options.model_hdf5_file is None:
         options.model_hdf5_file = '%s/model_out.h5' % options.out_dir
 
