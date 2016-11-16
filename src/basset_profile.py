@@ -195,7 +195,7 @@ def main():
     plt.figure()
     g = sns.clustermap(np.transpose(seqs_preds_prof[seqs_sort_dist[:1000]]), col_cluster=False, metric='euclidean', linewidths=0, yticklabels=target_labels[profile_mask], xticklabels=False)
     plt.setp(g.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
-    for label in ax.yaxis.get_majorticklabels():
+    for label in g.ax_heatmap.yaxis.get_majorticklabels():
         label.set_fontsize(options.font_heat)
     plt.savefig('%s/heat_rank.pdf' % options.out_dir)
     plt.close()
