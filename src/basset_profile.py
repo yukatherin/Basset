@@ -206,6 +206,9 @@ def main():
     #################################################################
     satmut_targets = ','.join([str(ti) for ti in range(len(activity_profile)) if profile_mask[ti]])
 
+    if gpgpu_str != '':
+        gpgpu_str = '-%s' % gpgpu_str
+
     for ni in range(options.num_dissect):
         si = seqs_sort_dist[ni]
 
@@ -216,8 +219,6 @@ def main():
         fasta_out.close()
 
         # saturated mutagenesis
-        if gpgpu_str != '':
-            gpgpu_str = '-%s' % gpgpu_str
         cmd = 'basset_sat.py %s -n 500 -o %s/satmut%d -t %s %s %s' % (gpgpu_str, options.out_dir, ni, satmut_targets, model_file, fasta_file)
         subprocess.call(cmd, shell=True)
 
