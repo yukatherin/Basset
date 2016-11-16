@@ -150,7 +150,7 @@ def main():
     seqs_sort_var = np.argsort(seqs_preds_var)[::-1]
 
     plt.figure()
-    g = sns.clustermap(np.transpose(seqs_preds_prof[seqs_sort_var[:1000]]), metric='euclidean', linewidths=0, yticklabels=target_labels[profile_mask], xticklabels=False)
+    g = sns.clustermap(np.transpose(seqs_preds_prof[seqs_sort_var[:1000]]), metric='cosine', linewidths=0, yticklabels=target_labels[profile_mask], xticklabels=False)
     plt.setp(g.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
     for label in g.ax_heatmap.yaxis.get_majorticklabels():
         label.set_fontsize(options.font_heat)
@@ -193,7 +193,7 @@ def main():
     # plot sorted heat map
     #################################################################
     plt.figure()
-    g = sns.clustermap(np.transpose(seqs_preds_prof[seqs_sort_dist[:1000]]), col_cluster=False, metric='euclidean', linewidths=0, yticklabels=target_labels[profile_mask], xticklabels=False)
+    g = sns.clustermap(np.transpose(seqs_preds_prof[seqs_sort_dist[:1000]]), col_cluster=False, metric='cosine', linewidths=0, yticklabels=target_labels[profile_mask], xticklabels=False)
     plt.setp(g.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
     for label in g.ax_heatmap.yaxis.get_majorticklabels():
         label.set_fontsize(options.font_heat)
