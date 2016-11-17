@@ -26,8 +26,7 @@ def main():
 
 def seq_logo(seq, heights, out_eps, weblogo_args='', color_mode='classic'):
     # print the sequence to a temp fasta file
-    fasta_fd, fasta_file = tempfile.mkstemp()   # TEMP
-    fasta_file = 'temp.fa'   # TEMP
+    fasta_fd, fasta_file = tempfile.mkstemp()
     fasta_out = open(fasta_file, 'w')
     print('>seq\n%s' % seq, file=fasta_out)
     fasta_out.close()
