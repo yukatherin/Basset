@@ -38,6 +38,7 @@ def main():
     parser.add_option('-f', dest='font_heat', default=6, type='int', help='Heat map axis font size [Default: %default]')
     parser.add_option('-n', dest='num_dissect', default=10, type='int', help='Dissect the top n hits [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='profile', help='Output directory [Default: %default]')
+    parser.add_option('-r', dest='norm_preds', default=False, action='store_true', help='Normalize predictions to have equal frequency [Default: %default]')
     parser.add_option('-z', dest='weight_zero', default=1.0, type='float', help='Adjust the weights for the zero samples by this value [Default: %default]')
     (options,args) = parser.parse_args()
 
@@ -141,6 +142,20 @@ def main():
     # parse profile file
     #################################################################
     activity_profile, profile_weights, profile_mask, target_labels = load_profile(profile_file, num_targets, options.norm_even, options.weight_zero)
+
+    # normalize predictions
+    if options.norm_preds:
+        pred_means = seqs_preds.mean(axis=0)
+
+        # profile median prior
+        median_mean = pred_means[profile_mask].median()
+
+        # normalize
+        for ti in range(seqs_preds.shape[1]):
+            ratio_ti = pred_means[ti]/median_mean
+            if profile_mask[ti] and (ratio_ti < 0.5 or ratio_ti > 2):
+                print('WARNING: target %d with mean %.3f differs 2-fold from the median %.3f' % (ti,pred_means[ti], median_mean), file=sys.stderr)
+            seqs_preds[:,ti] = z_norm(seqs_preds[:,ti], median_mean)
 
     #################################################################
     # plot clustered heat map limited to relevant targets
@@ -255,14 +270,15 @@ def load_profile(profile_file, num_targets, norm_even=False, weight_zero=1):
         if len(a) > 3:
             tlabel = a[3]
 
-        while len(activity_profile) < ti:
+        while ti >= len(activity_profile):
             activity_profile.append(np.nan)
             profile_weights.append(0)
             target_labels.append(None)
 
-        activity_profile.append(ta)
-        profile_weights.append(tw)
-        target_labels.append(tlabel)
+        activity_profile[ti] = ta
+        profile_weights[ti] = tw
+        target_labels[ti] = tlabel
+
 
     while len(activity_profile) < num_targets:
         activity_profile.append(np.nan)
@@ -298,12 +314,45 @@ def load_profile(profile_file, num_targets, norm_even=False, weight_zero=1):
                     profile_weights[ti] /= sum_off
 
     # up-weight zero's
-    if weight_zero:
-        for ti in range(activity_profile.shape[0]):
-            if profile_mask[ti] and activity_profile[ti] == 0:
-                profile_weights[ti] *= weight_zero
+    for ti in range(activity_profile.shape[0]):
+        if profile_mask[ti] and activity_profile[ti] == 0:
+            profile_weights[ti] *= weight_zero
 
     return activity_profile, profile_weights, profile_mask, target_labels
+
+
+def znorm(p_b, u_a):
+    ''' Normalize the "before" probabilities p_b to have "after"
+         mean u_a, by adjusting the pre-logistic z values by a
+         constant.
+
+    In
+     p_b: numpy array of "before" probabilties
+     u_a: desired "after" mean
+
+    Out
+     p_a: numpy array of "after" probabilities
+    '''
+
+    # compute the z corresponding the desired u_a
+    uz_a = np.log(u_a) - np.log(1-u_a)
+
+    # compute the "before"
+    u_b = p_b.mean()
+
+    # compute the z corresonding to the existing u_b
+    uz_b = np.log(u_b) - np.log(1-u_b)
+
+    # compute the z vector corresponding to the existing p_b
+    pz_b = np.log(p_b) - np.log(1-p_b)
+
+    # adjust the z vector
+    pz_a = pz_b - uz_b + uz_a
+
+    # re-compute the normalized probabilities
+    p_a = np.power(np.exp(-pz_a) + 1, -1)
+
+    return p_a
 
 
 ################################################################################
