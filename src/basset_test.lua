@@ -21,6 +21,7 @@ cmd:text('Options:')
 cmd:option('-batch', 128, 'Batch size')
 cmd:option('-cuda', false, 'Run on GPGPU')
 cmd:option('-cudnn', false, 'Run on GPGPU w/ cuDNN')
+cmd:option('-mc_n', 0, 'Perform MCMC prediction')
 cmd:option('-rc', false, 'Average forward and reverse complement')
 cmd:text()
 opt = cmd:parse(arg)
@@ -50,11 +51,22 @@ convnet:load(convnet_params)
 ----------------------------------------------------------------
 -- predict and test
 ----------------------------------------------------------------
--- guarantee evaluate mode
-convnet.model:evaluate()
+local loss
+local AUCs
+local roc_points
 
--- measure accuracy on a test set
-local loss, AUCs, roc_points = convnet:test(test_seqs, test_targets, opt.batch_size, opt.rc)
+if opt.mc_n > 1 then
+    -- measure accuracy on a test set
+    loss, AUCs, roc_points = convnet:test_mc(test_seqs, test_targets, job.mc_n, opt.batch_size)
+
+else
+    -- guarantee evaluate mode
+    convnet.model:evaluate()
+
+    -- measure accuracy on a test set
+    loss, AUCs, roc_points = convnet:test(test_seqs, test_targets, opt.batch_size, opt.rc)
+end
+
 local avg_auc = torch.mean(AUCs)
 
 -- cd to output dir
