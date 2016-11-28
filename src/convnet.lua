@@ -1146,7 +1146,7 @@ function ConvNet:test_mc(Xf, Yf, mc_n, batch_size, rc_too)
             end
         end
 
-        if rc_too
+        if rc_too then
             preds_batch = preds_batch / (2*mc_n)
         else
             preds_batch = preds_batch / mc_n
