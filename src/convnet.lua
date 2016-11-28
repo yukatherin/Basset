@@ -1100,7 +1100,7 @@ end
 --
 -- Predict targets for X and compare to Y.
 ----------------------------------------------------------------
-function ConvNet:test_mc(Xf, Yf, mc_n, batch_size)
+function ConvNet:test_mc(Xf, Yf, mc_n, batch_size, rc_too)
     -- requires stochasticity
     self.model:training()
 
@@ -1135,7 +1135,22 @@ function ConvNet:test_mc(Xf, Yf, mc_n, batch_size)
             local preds_batch_mc = self.model:forward(inputs)
             preds_batch = preds_batch + preds_batch_mc
         end
-        preds_batch = preds_batch / mc_n
+
+        if rc_too then
+            -- reverse complement the sequences
+            local rc_inputs = self:rc_seqs(inputs)
+
+            for mi = 1,mc_n do
+                local preds_batch_mc = self.model:forward(rc_inputs)
+                preds_batch = preds_batch + preds_batch_mc
+            end
+        end
+
+        if rc_too
+            preds_batch = preds_batch / (2*mc_n)
+        else
+            preds_batch = preds_batch / mc_n
+        end
 
         -- accumulate loss
         loss = loss + self.criterion:forward(preds_batch, targets)
