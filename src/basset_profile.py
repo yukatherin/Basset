@@ -148,14 +148,14 @@ def main():
         pred_means = seqs_preds.mean(axis=0)
 
         # profile median prior
-        median_mean = pred_means[profile_mask].median()
+        median_mean = np.median(pred_means[profile_mask])
 
         # normalize
         for ti in range(seqs_preds.shape[1]):
             ratio_ti = pred_means[ti]/median_mean
-            if profile_mask[ti] and (ratio_ti < 0.5 or ratio_ti > 2):
-                print('WARNING: target %d with mean %.3f differs 2-fold from the median %.3f' % (ti,pred_means[ti], median_mean), file=sys.stderr)
-            seqs_preds[:,ti] = z_norm(seqs_preds[:,ti], median_mean)
+            if profile_mask[ti] and (ratio_ti < 1/4 or ratio_ti > 4):
+                print('WARNING: target %d with mean %.4f differs 4-fold from the median %.3f' % (ti,pred_means[ti], median_mean), file=sys.stderr)
+            seqs_preds[:,ti] = znorm(seqs_preds[:,ti], median_mean)
 
     #################################################################
     # plot clustered heat map limited to relevant targets
