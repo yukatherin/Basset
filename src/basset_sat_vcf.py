@@ -110,6 +110,7 @@ def main():
     nts = 'ACGT'
     for si in range(seq_mod_preds.shape[0]):
         header = seq_headers[si]
+        header_fs = fs_clean(header)
         seq = seqs[si]
 
         # plot some descriptive heatmaps for each individual cell type
@@ -138,7 +139,7 @@ def main():
                 seq_heights = 0.25 + 1.75/vlim*(abs(minmax_matrix).max(axis=0))
             else:
                 seq_heights = 0.25 + 1.75/vlim*(-minmax_matrix[0])
-            logo_eps = '%s/%s_c%d_seq.eps' % (options.out_dir, header.replace(':','_'), ci)
+            logo_eps = '%s/%s_c%d_seq.eps' % (options.out_dir, header_fs, ci)
             seq_logo(seq, seq_heights, logo_eps, color_mode='meme')
 
             # add to figure
@@ -164,7 +165,7 @@ def main():
 
             # save final figure
             plt.tight_layout()
-            plt.savefig('%s/%s_c%d_heat.pdf' % (options.out_dir,header.replace(':','_'), ci), dpi=300)
+            plt.savefig('%s/%s_c%d_heat.pdf' % (options.out_dir, header_fs, ci), dpi=300)
             plt.close()
 
 
@@ -187,6 +188,12 @@ def main():
 
     table_out.close()
 
+
+def fs_clean(header):
+    ''' Clean up the headers to valid filenames. '''
+    header = header.replace(':','_')
+    header = header.replace('>','_')
+    return header
 
 ################################################################################
 # __main__
