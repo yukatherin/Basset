@@ -51,7 +51,7 @@ def main():
     #############################################
     # make all PRC plots
     #############################################
-    auc_out = open('%s/auc.txt' % options.out_dir, 'w')
+    auc_out = open('%s/aucs.txt' % options.out_dir, 'w')
 
     for ti in range(len(target_labels)):
         print('Target %d: %s' % (ti,target_labels[ti]))
