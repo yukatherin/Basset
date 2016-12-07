@@ -56,6 +56,9 @@ local AUCs
 local roc_points
 
 if opt.mc_n > 1 then
+    -- set stochastic evaulate mode
+    convnet:evaluate_mc()
+
     -- measure accuracy on a test set
     loss, AUCs, roc_points = convnet:test_mc(test_seqs, test_targets, opt.mc_n, opt.batch_size, opt.rc)
 

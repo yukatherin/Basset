@@ -371,6 +371,24 @@ end
 
 
 ----------------------------------------------------------------
+-- evaluate_mc
+--
+-- Decrease the optimization learning_rate by a multiplier
+----------------------------------------------------------------
+function ConvNet:evaluate_mc()
+    self.model:evaluate()
+
+    mi = 1
+    while mi <= #(self.model.modules) do
+        if torch.typename(self.model.modules[mi]) == "nn.Dropout" then
+            self.model.modules[mi]:training()
+        end
+        mi = mi + 1
+    end
+end
+
+
+----------------------------------------------------------------
 -- get_nonlinearity
 --
 -- Return the module representing nonlinearity x.
@@ -499,6 +517,98 @@ function ConvNet:predict(Xf, batch_size, Xtens, rc_avg)
             -- so add back the forward, and average
             preds_batch = (preds_batch + preds_batch_fwd) / 2
             scores_batch = (scores_batch + scores_batch_fwd) / 2
+        end
+
+        -- copy into larger Tensor
+        for i = 1,(#preds_batch)[1] do
+            preds[{pi,{}}] = preds_batch[{i,{}}]:float()
+            scores[{pi,{}}] = scores_batch[{i,{}}]:float()
+            pi = pi + 1
+        end
+
+        -- next batch
+        Xb = batcher:next()
+
+        -- collect garbage occasionaly
+        cgi = cgi + 1
+        if cgi % 100 == 0 then
+            collectgarbage()
+        end
+    end
+
+    return preds, scores
+end
+
+----------------------------------------------------------------
+-- predict_mc
+--
+-- Predict targets for a new set of sequences.
+----------------------------------------------------------------
+function ConvNet:predict_mc(Xf, mc_n, batch_size, Xtens, rc_too)
+    -- requires stochasticity
+    self.model:training()
+
+    local bs = batch_size or self.batch_size
+    local batcher
+    if Xtens then
+        batcher = BatcherT:__init(Xf, nil, bs)
+    else
+        batcher = Batcher:__init(Xf, nil, bs)
+    end
+
+    -- find final model layer
+    local final_i = #self.model.modules - 1
+    if self.target_type == "continuous" then
+        final_i = final_i + 1
+    end
+
+    -- track predictions across batches
+    local preds = torch.FloatTensor(batcher.num_seqs, self.num_targets)
+    local scores = torch.FloatTensor(batcher.num_seqs, self.num_targets)
+    local pi = 1
+
+    -- collect garbage occasionaly
+    local cgi = 0
+
+    -- get first batch
+    local Xb = batcher:next()
+
+    -- while batches remain
+    while Xb ~= nil do
+        -- cuda
+        if cuda then
+            Xb = Xb:cuda()
+        end
+
+        -- predict
+        local preds_batch = self.model:forward(Xb)
+        local scores_batch = self.model.modules[final_i].output
+
+        for mi = 2,mc_n do
+            local preds_batch_mc = self.model:forward(Xb)
+            local scores_batch_mc = self.model.modules[final_i].output
+            preds_batch = preds_batch + preds_batch_mc
+            scores_batch = scores_batch + scores_batch_mc
+        end
+
+        if rc_too then
+            -- reverse complement the sequences
+            local Xb_rc = self:rc_seqs(Xb)
+
+            for mi = 1,mc_n do
+                local preds_batch_mc = self.model:forward(Xb_rc)
+                local scores_batch_mc = self.model.modules[final_i].output
+                preds_batch = preds_batch + preds_batch_mc
+                scores_batch = scores_batch + scores_batch_mc
+            end
+        end
+
+        if rc_too then
+            preds_batch = preds_batch / (2*mc_n)
+            scores_batch = scores_batch / (2*mc_n)
+        else
+            preds_batch = preds_batch / mc_n
+            scores_batch = scores_batch / mc_n
         end
 
         -- copy into larger Tensor

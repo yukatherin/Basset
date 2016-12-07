@@ -22,6 +22,7 @@ cmd:option('-batch', 128, 'Maximum batch size')
 cmd:option('-center_nt', 0, 'Mutate only the center nucleotides')
 cmd:option('-cuda', false, 'Run on GPGPU')
 cmd:option('-cudnn', false, 'Run on GPGPU w/ cuDNN')
+cmd:option('-mc_n', 0, 'Perform MCMC prediction')
 cmd:option('-norm', false, 'Normalize target predictions')
 cmd:option('-rc', false, 'Average forward and reverse complement')
 cmd:option('-pre_sigmoid', false, 'Measure changes pre-sigmoid')
@@ -57,8 +58,21 @@ local fl = #convnet.model.modules - 1
 -- predict
 ----------------------------------------------------------------
 -- predict seqs
-convnet.model:evaluate()
-local preds, prepreds = convnet:predict(test_seqs, opt.batch, false, opt.rc)
+
+local preds, prepreds
+if opt.mc_n > 1 then
+    -- set stochastic evaluate mode
+    convnet:evaluate_mc()
+
+    -- compute predictions
+    preds, prepreds = convnet:predict_mc(test_seqs, opt.mc_n, opt.batch, false, opt.rc)
+else
+    -- set evaluate mode
+    convnet.model:evaluate()
+
+    -- compuate predictions
+    preds, prepreds = convnet:predict(test_seqs, opt.batch, false, opt.rc)
+end
 local num_targets = (#preds)[2]
 
 -- normalize predictions
@@ -121,7 +135,12 @@ for si=1,num_seqs do
 	end
 
 	-- predict modified sequences
-	local mod_preds, mod_prepreds = convnet:predict(seq_mods, opt.batch_size, true, opt.rc)
+	local mod_preds, mod_prepreds
+    if opt.mc_n > 1 then
+        mod_preds, mod_prepreds = convnet:predict_mc(seq_mods, opt.mc_n, opt.batch_size, true, opt.rc)
+    else
+        mod_preds, mod_prepreds = convnet:predict(seq_mods, opt.batch_size, true, opt.rc)
+    end
 
     -- normalize predictions
     if opt.norm then

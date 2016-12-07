@@ -20,6 +20,7 @@ cmd:text('Options:')
 cmd:option('-batch', 128, 'Batch size')
 cmd:option('-cuda', false, 'Run on GPGPU')
 cmd:option('-cudnn', false, 'Run on GPGPU w/ cuDNN')
+cmd:option('-mc_n', 0, 'Perform MCMC prediction')
 cmd:option('-norm', false, 'Normalize all targets to a level plane')
 cmd:option('-rc', false, 'Average forward and reverse complement')
 cmd:option('-scores', false, 'Print scores instead of predictions')
@@ -54,11 +55,20 @@ end
 ----------------------------------------------------------------
 -- predict and test
 ----------------------------------------------------------------
--- guarantee evaluate mode
-convnet.model:evaluate()
+local preds, scores
+if opt.mc_n > 1 then
+    -- set stochastic evaulate mode
+    convnet:evaluate_mc()
 
--- measure accuracy on a test set
-local preds, scores = convnet:predict(test_seqs, opt.batch, false, opt.rc)
+    -- compute predictions
+    preds, scores = convnet:predict_mc(test_seqs, opt.mc_n, opt.batch, false, opt.rc)
+else
+    -- set evaluate mode
+    convnet.model:evaluate()
+
+    -- compute predictions
+    preds, scores = convnet:predict(test_seqs, opt.batch, false, opt.rc)
+end
 
 if opt.norm then
     preds = troy_norm(preds, convnet.pred_means)
