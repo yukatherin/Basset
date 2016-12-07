@@ -2,7 +2,6 @@
 from __future__ import print_function
 from optparse import OptionParser
 import os
-from sklearn.metrics import log_loss
 import subprocess
 import sys
 
@@ -12,9 +11,10 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+from sklearn.metrics import log_loss
 
 import dna_io
-from basset_profile import load_profile
+from basset_profile import load_profile, znorm
 from basset_sat import get_real_nt
 
 '''
@@ -34,6 +34,7 @@ def main():
     parser.add_option('--cuda', dest='cuda', default=False, action='store_true', help='Run on GPGPU [Default: %default]')
     parser.add_option('--cudnn', dest='cudnn', default=False, action='store_true', help='Run on GPGPU w/cuDNN [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='refine', help='Output directory [Default: %default]')
+    parser.add_option('-r', dest='norm_preds_file', default=None, help='Prediction means file used to normalize predictions to have equal frequency')
     parser.add_option('-s', dest='early_stop', default=.05, type='float', help='Proportion by which the mutation must improve to be accepted [Default: %default]')
     parser.add_option('-z', dest='weight_zero', default=1.0, type='float', help='Adjust the weights for the zero samples by this value [Default: %default]')
     (options,args) = parser.parse_args()
@@ -74,10 +75,23 @@ def main():
     seq_preds = predict_seq(model_file, seq_1hot, gpgpu_str, options.out_dir)
     num_targets = seq_preds.shape[0]
 
+
     #################################################################
     # prep profile
     #################################################################
     activity_profile, profile_weights, profile_mask, target_labels = load_profile(profile_file, num_targets, options.norm_even, options.weight_zero)
+
+    # normalize predictions
+    if options.norm_preds_file is not None:
+        pred_means = np.load(options.norm_preds_file)
+
+        # aim for profile weighted average
+        aim_mean = np.average(pred_means[profile_mask], weights=profile_weights[profile_mask])
+
+        # normalize
+        for ti in range(num_targets):
+            seq_preds[ti] = znorm(seq_preds[ti], pred_means[ti], aim_mean)
+
 
     #################################################################
     # iteratively refine
@@ -87,7 +101,7 @@ def main():
     refined_profile_list = [seq_preds[profile_mask]]
     ri = 1
     while not local_max:
-        print('Refinement stage %d' % ri)
+        print('Refinement stage %d' % ri, flush=True)
 
         # write sequence to HDF5
         seq_hdf5_file = '%s/seq%d.h5' % (options.out_dir,ri)
@@ -105,6 +119,11 @@ def main():
         seq_mod_preds = np.array(sat_hdf5_in['seq_mod_preds'])
         seq_mod_preds = seq_mod_preds.squeeze()
         sat_hdf5_in.close()
+
+        # normalize
+        if options.norm_preds_file is not None:
+            for ti in range(seq_mod_preds.shape[2]):
+                seq_mod_preds[:,:,ti] = znorm(seq_mod_preds[:,:,ti], pred_means[ti], aim_mean)
 
         # find sequence prediction
         ni, li = get_real_nt(seq)
@@ -136,7 +155,7 @@ def main():
             # update trace
             li, ni = min_entry
             print(' Mutate %d %s --> %s' % (li, seq[li], nts[ni]))
-            print(' Distance decreases from %.3f to %.3f' % (seq_dist, min_dist))
+            print(' Distance decreases from %.3f to %.3f' % (seq_dist, min_dist), flush=True)
 
             # update sequence
             seq = seq[:li] + nts[ni] + seq[li+1:]
@@ -146,6 +165,7 @@ def main():
             refined_profile_list.append(seq_mod_preds[ni,li,profile_mask])
 
         ri += 1
+
 
     #################################################################
     # finish
@@ -197,7 +217,7 @@ def predict_seq(model_file, seq_1hot, gpgpu_str, out_dir):
 
     # predict
     preds_file = '%s/preds0.txt' % out_dir
-    torch_cmd = 'basset_predict.lua %s %s %s %s' % (gpgpu_str, model_file, seq_hdf5_file, preds_file)
+    torch_cmd = 'basset_predict.lua -rc %s %s %s %s' % (gpgpu_str, model_file, seq_hdf5_file, preds_file)
     subprocess.call(torch_cmd, shell=True)
 
     # read predictions

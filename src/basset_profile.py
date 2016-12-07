@@ -2,7 +2,6 @@
 from __future__ import print_function
 from optparse import OptionParser
 import os
-from sklearn.metrics import log_loss
 import subprocess
 import sys
 
@@ -12,6 +11,10 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+sns.set(style="ticks")
+from sklearn.decomposition import PCA
+from sklearn.metrics import log_loss
+from sklearn.manifold import TSNE
 
 import dna_io
 
@@ -31,6 +34,7 @@ def main():
     usage = 'usage: %prog [options] <model_file> <profile_file> <input_file>'
     parser = OptionParser(usage)
     parser.add_option('-a', dest='input_activity_file', help='Optional activity table corresponding to an input FASTA file')
+    parser.add_option('--all', dest='all_data', default=False, action='store_true', help='Search all training/valid/test sequences. By default we search only the test set. [Default: %default]')
     parser.add_option('--cuda', dest='cuda', default=False, action='store_true', help='Run on GPGPU [Default: %default]')
     parser.add_option('--cudnn', dest='cudnn', default=False, action='store_true', help='Run on GPGPU w/cuDNN [Default: %default]')
     parser.add_option('-d', dest='model_out_file', default=None, help='Pre-computed model predictions output table [Default: %default]')
@@ -99,13 +103,11 @@ def main():
 
             # load (sampled) test data from HDF5
             hdf5_in = h5py.File(input_file, 'r')
+
             seqs_1hot = np.array(hdf5_in['test_in'])
             targets = np.array(hdf5_in['test_out'])
-            try: # TEMP
-                seq_headers = np.array([h.decode('UTF-8') for h in hdf5_in['test_headers']])
-                # seq_headers = np.array(hdf5_in['test_headers'])
-            except:
-                seq_headers = None
+            seq_headers = np.array([h.decode('UTF-8') for h in hdf5_in['test_headers']])
+
             hdf5_in.close()
 
             # convert to ACGT sequences
@@ -128,7 +130,7 @@ def main():
     if options.model_out_file is None:
         options.model_out_file = '%s/preds.txt' % options.out_dir
 
-        torch_cmd = 'basset_predict.lua -rc %s %s %s %s' % (gpgpu_str, model_file, model_input_hdf5, options.model_out_file)
+        torch_cmd = 'basset_predict.lua -mc_n 10 -rc %s %s %s %s' % (gpgpu_str, model_file, model_input_hdf5, options.model_out_file)
         print(torch_cmd)
         subprocess.call(torch_cmd, shell=True)
 
@@ -147,15 +149,19 @@ def main():
     if options.norm_preds:
         pred_means = seqs_preds.mean(axis=0)
 
-        # profile median prior
-        median_mean = np.median(pred_means[profile_mask])
+        # save to file for basset_refine.py
+        np.save('%s/pred_means' % options.out_dir, pred_means)
+
+        # aim for profile weighted average
+        aim_mean = np.average(pred_means[profile_mask], weights=profile_weights[profile_mask])
 
         # normalize
         for ti in range(seqs_preds.shape[1]):
-            ratio_ti = pred_means[ti]/median_mean
+            ratio_ti = pred_means[ti]/aim_mean
             if profile_mask[ti] and (ratio_ti < 1/4 or ratio_ti > 4):
-                print('WARNING: target %d with mean %.4f differs 4-fold from the median %.3f' % (ti,pred_means[ti], median_mean), file=sys.stderr)
-            seqs_preds[:,ti] = znorm(seqs_preds[:,ti], median_mean)
+                print('WARNING: target %d with mean %.4f differs 4-fold from the median %.3f' % (ti,pred_means[ti], aim_mean), file=sys.stderr)
+            seqs_preds[:,ti] = znorm(seqs_preds[:,ti], pred_means[ti], aim_mean)
+
 
     #################################################################
     # plot clustered heat map limited to relevant targets
@@ -164,12 +170,28 @@ def main():
     seqs_preds_var = seqs_preds_prof.var(axis=1)
     seqs_sort_var = np.argsort(seqs_preds_var)[::-1]
 
+    # heat map
     plt.figure()
-    g = sns.clustermap(np.transpose(seqs_preds_prof[seqs_sort_var[:1000]]), metric='cosine', linewidths=0, yticklabels=target_labels[profile_mask], xticklabels=False)
+    g = sns.clustermap(np.transpose(seqs_preds_prof[seqs_sort_var[:1500]]), metric='cosine', linewidths=0, yticklabels=target_labels[profile_mask], xticklabels=False)
     plt.setp(g.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
     for label in g.ax_heatmap.yaxis.get_majorticklabels():
         label.set_fontsize(options.font_heat)
     plt.savefig('%s/heat_clust.pdf' % options.out_dir)
+    plt.close()
+
+    # dimension reduction
+    # model_pca = PCA(n_components=50)
+    # spp_pca = model.fit_transform(np.transpose(seqs_preds_prof))
+    # model = TSNE(n_components=2, perplexity=5, metric='euclidean')
+    # spp_dr = model.fit_transform(spp_pca)
+    model = PCA(n_components=2)
+    spp_dr = model.fit_transform(np.transpose(seqs_preds_prof))
+    plt.figure()
+    plt.scatter(spp_dr[:,0], spp_dr[:,1], c='black', s=5)
+    target_labels_prof_concise = [tl.split(':')[-1] for tl in target_labels[profile_mask]]
+    for label, x, y, activity in zip(target_labels_prof_concise, spp_dr[:,0], spp_dr[:,1], activity_profile[profile_mask]):
+        plt.annotate(label, xy=(x,y), size=10, color=sns.color_palette('deep')[int(activity)])
+    plt.savefig('%s/dim_red.pdf' % options.out_dir)
     plt.close()
 
 
@@ -234,7 +256,7 @@ def main():
         fasta_out.close()
 
         # saturated mutagenesis
-        cmd = 'basset_sat.py %s -n 500 -o %s/satmut%d -t %s %s %s' % (gpgpu_str, options.out_dir, ni, satmut_targets, model_file, fasta_file)
+        cmd = 'basset_sat.py %s --mc_n 10 -n 500 -o %s/satmut%d -t %s %s %s' % (gpgpu_str, options.out_dir, ni, satmut_targets, model_file, fasta_file)
         subprocess.call(cmd, shell=True)
 
         # predictions and targets heat
@@ -321,13 +343,14 @@ def load_profile(profile_file, num_targets, norm_even=False, weight_zero=1):
     return activity_profile, profile_weights, profile_mask, target_labels
 
 
-def znorm(p_b, u_a):
+def znorm(p_b, u_b, u_a):
     ''' Normalize the "before" probabilities p_b to have "after"
          mean u_a, by adjusting the pre-logistic z values by a
          constant.
 
     In
      p_b: numpy array of "before" probabilties
+     u_b: "before" mean (perhaps unrelated to this set of p_b)
      u_a: desired "after" mean
 
     Out
@@ -337,8 +360,8 @@ def znorm(p_b, u_a):
     # compute the z corresponding the desired u_a
     uz_a = np.log(u_a) - np.log(1-u_a)
 
-    # compute the "before"
-    u_b = p_b.mean()
+    # compute the "before" mean
+    # u_b = p_b.mean()
 
     # compute the z corresonding to the existing u_b
     uz_b = np.log(u_b) - np.log(1-u_b)
