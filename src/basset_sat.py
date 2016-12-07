@@ -33,6 +33,7 @@ def main():
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5 [Default: %default]')
     parser.add_option('-g', dest='gain_height', default=False, action='store_true', help='Nucleotide heights determined by the max of loss and gain [Default: %default]')
     parser.add_option('-m', dest='min_limit', default=0.1, type='float', help='Minimum heatmap limit [Default: %default]')
+    parser.add_option('--mc_n', dest='mc_n', default=0, type='int', help='Perform monte carlo prediction with N samples [Default: %default]')
     parser.add_option('-n', dest='center_nt', default=0, type='int', help='Center nt to mutate and plot in the heat map [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='heat', help='Output directory [Default: %default]')
     parser.add_option('-p', dest='print_table_all', default=False, action='store_true', help='Print all targets to the table [Default: %default]')
@@ -160,7 +161,7 @@ def main():
         elif options.cuda:
             gpgpu_str = '-cuda'
 
-        torch_cmd = 'basset_sat_predict.lua %s -rc -center_nt %d %s %s %s' % (gpgpu_str, options.center_nt, model_file, model_input_hdf5, options.model_hdf5_file)
+        torch_cmd = 'basset_sat_predict.lua %s -rc -mc_n %d -center_nt %d %s %s %s' % (gpgpu_str, options.mc_n, options.center_nt, model_file, model_input_hdf5, options.model_hdf5_file)
         print(torch_cmd)
         subprocess.call(torch_cmd, shell=True)
 
