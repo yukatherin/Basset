@@ -373,15 +373,18 @@ end
 ----------------------------------------------------------------
 -- evaluate_mc
 --
--- Decrease the optimization learning_rate by a multiplier
+-- Change only the batch normalization layers to evaluate.
 ----------------------------------------------------------------
 function ConvNet:evaluate_mc()
-    self.model:evaluate()
+    self.model:training()
 
     mi = 1
     while mi <= #(self.model.modules) do
-        if torch.typename(self.model.modules[mi]) == "nn.Dropout" then
-            self.model.modules[mi]:training()
+        if torch.typename(self.model.modules[mi]) == "cudnn.SpatialBatchNormalization" then
+            self.model.modules[mi]:evaluate()
+        end
+        if torch.typename(self.model.modules[mi]) == "cudnn.BatchNormalization" then
+            self.model.modules[mi]:evaluate()
         end
         mi = mi + 1
     end
@@ -546,7 +549,7 @@ end
 ----------------------------------------------------------------
 function ConvNet:predict_mc(Xf, mc_n, batch_size, Xtens, rc_too)
     -- requires stochasticity
-    self.model:training()
+    -- self.model:training()
 
     local bs = batch_size or self.batch_size
     local batcher
@@ -1212,7 +1215,7 @@ end
 ----------------------------------------------------------------
 function ConvNet:test_mc(Xf, Yf, mc_n, batch_size, rc_too)
     -- requires stochasticity
-    self.model:training()
+    -- self.model:training()
 
     -- track the loss across batches
     local loss = 0
