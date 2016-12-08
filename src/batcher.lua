@@ -1,7 +1,7 @@
 Batcher = {}
 Batcher.__index = Batcher
 
-function Batcher:__init(Xf, Yf, batch_size)
+function Batcher:__init(Xf, Yf, batch_size, partial)
     bat = {}
     setmetatable(bat, self)
 
@@ -16,6 +16,7 @@ function Batcher:__init(Xf, Yf, batch_size)
     end
 
     bat.batch_size = batch_size
+    bat.partial = partial or true
 
     bat:reset()
 
@@ -26,7 +27,7 @@ function Batcher:next()
     local X_batch = nil
     local Y_batch = nil
 
-    if self.start <= self.num_seqs then
+    if self.start + self.batch_size <= self.num_seqs or (self.partial and self.start <= self.num_seqs) then
         -- get data
         X_batch = self.Xf:partial({self.start,self.stop}, {1,self.init_depth}, {1,1}, {1,self.seq_len}):double()
         if self.Yf ~= nil then

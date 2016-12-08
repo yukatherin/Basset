@@ -71,7 +71,7 @@ else
     local line = job_in:read()
     while line ~= nil do
         for k, v in string.gmatch(line, "([%w%p]+)%s+([%w%p]+)") do
-            -- if key already exsits
+            -- if key already exists
             if job[k] then
                 -- change to a table
                 if type(job[k]) ~= 'table' then
@@ -138,7 +138,7 @@ local acc_best = 0
 local train_loss_last
 local valid_loss
 local valid_acc
-local batcher = Batcher:__init(train_seqs, train_targets, convnet.batch_size)
+local batcher = Batcher:__init(train_seqs, train_targets, convnet.batch_size, false)
 
 while epoch <= opt.max_epochs and epoch - epoch_best <= opt.stagnant_t do
     io.write(string.format("Epoch #%3d   ", epoch))
@@ -149,6 +149,9 @@ while epoch <= opt.max_epochs and epoch - epoch_best <= opt.stagnant_t do
     io.write(string.format("train loss = %7.3f, ", train_loss))
 
     if job.mc_n ~= nil and job.mc_n > 1 then
+        -- change to evaluate mode
+        convnet:evaluate_mc()
+
         -- measure accuracy on a test set
         valid_loss, valid_acc, valid_cor = convnet:test_mc(valid_seqs, valid_targets, job.mc_n)
 
