@@ -48,10 +48,6 @@ local convnet = ConvNet:__init()
 local convnet_params = torch.load(opt.model_file)
 convnet:load(convnet_params)
 
-if cuda then
-    convnet:cuda()
-end
-
 ----------------------------------------------------------------
 -- predict and test
 ----------------------------------------------------------------
