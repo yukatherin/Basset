@@ -63,7 +63,7 @@ if opt.mc_n > 1 then
     loss, AUCs, roc_points = convnet:test_mc(test_seqs, test_targets, opt.mc_n, opt.batch_size, opt.rc)
 
 else
-    -- guarantee evaluate mode
+    -- set evaluate mode
     convnet.model:evaluate()
 
     -- measure accuracy on a test set
