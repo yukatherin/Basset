@@ -319,7 +319,7 @@ function ConvNet:cuda()
     self.model:cuda()
 
     if cuda_nn then
-        cudnn.convert(self.model, nn)
+        cudnn.convert(self.model, cudnn)
     end
 
     self.parameters, self.gradParameters = self.model:getParameters()
@@ -380,11 +380,14 @@ function ConvNet:evaluate_mc()
 
     mi = 1
     while mi <= #(self.model.modules) do
+        -- print(torch.typename(self.model.modules[mi]))
         if torch.typename(self.model.modules[mi]) == "cudnn.SpatialBatchNormalization" then
             self.model.modules[mi]:evaluate()
+            -- print("eval")
         end
         if torch.typename(self.model.modules[mi]) == "cudnn.BatchNormalization" then
             self.model.modules[mi]:evaluate()
+            -- print("eval")
         end
         mi = mi + 1
     end
