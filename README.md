@@ -29,8 +29,6 @@ To make the code available for use in any directory, also write
     export LUA_PATH="$BASSETDIR/src/?.lua;$LUA_PATH"
 ```
 
-You also need to add $BASSETDIR/src/?.lua to your LUA_PATH variable. This one is some sort of string, so export doesn't work. I just copy paste it in there. If you know
-
 To download and install the remaining dependencies, run
 ```
     ./install_dependencies.py
