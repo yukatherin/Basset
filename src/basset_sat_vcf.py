@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 from optparse import OptionParser
 import copy, os, pdb, subprocess, sys
 
@@ -11,7 +12,7 @@ import seaborn as sns
 import basset_sat
 import dna_io
 from seq_logo import seq_logo
-import vcf
+import bvcf
 
 ################################################################################
 # basset_sat_vcf.py
@@ -51,16 +52,16 @@ def main():
     # prep SNP sequences
     #################################################################
     # load SNPs
-    snps = vcf.vcf_snps(vcf_file, pos2=(options.genome2_fasta is not None))
+    snps = bvcf.vcf_snps(vcf_file, pos2=(options.genome2_fasta is not None))
 
     # get one hot coded input sequences
     if not options.genome1_fasta or not options.genome2_fasta:
-        seqs_1hot, seq_headers, snps, seqs = vcf.snps_seq1(snps, options.seq_len, options.genome_fasta, return_seqs=True)
+        seqs_1hot, seq_headers, snps, seqs = bvcf.snps_seq1(snps, options.seq_len, options.genome_fasta, return_seqs=True)
     else:
-        seqs_1hot, seq_headers, snps, seqs = vcf.snps2_seq1(snps, options.seq_len, options.genome1_fasta, options.genome2_fasta, return_seqs=True)
+        seqs_1hot, seq_headers, snps, seqs = bvcf.snps2_seq1(snps, options.seq_len, options.genome1_fasta, options.genome2_fasta, return_seqs=True)
 
     # reshape sequences for torch
-    seqs_1hot = seqs_1hot.reshape((seqs_1hot.shape[0],4,1,seqs_1hot.shape[1]/4))
+    seqs_1hot = seqs_1hot.reshape((seqs_1hot.shape[0],4,1,seqs_1hot.shape[1]//4))
 
     # write to HDF5
     model_input_hdf5 = '%s/model_in.h5'%options.out_dir
@@ -89,7 +90,7 @@ def main():
     delta_start = 0
     delta_len = seq_mod_preds.shape[2]
     if delta_len < options.seq_len:
-        delta_start = (options.seq_len - delta_len)/2
+        delta_start = (options.seq_len - delta_len)//2
         for si in range(len(seqs)):
             seqs[si] = seqs[si][delta_start:delta_start+delta_len]
 
@@ -184,7 +185,7 @@ def main():
 
             for pos in range(seq_mod_preds_cell.shape[1]):
                 cols = [header, delta_start+pos, ci, loss_matrix[pos], gain_matrix[pos]]
-                print >> table_out, '\t'.join([str(c) for c in cols])
+                print('\t'.join([str(c) for c in cols]), file=table_out)
 
     table_out.close()
 

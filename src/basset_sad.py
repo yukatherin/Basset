@@ -10,7 +10,7 @@ import pandas as pd
 import seaborn as sns
 
 from dna_io import dna_one_hot
-import vcf
+import bvcf
 
 ################################################################################
 # basset_sad.py
@@ -54,13 +54,13 @@ def main():
     # prep SNP sequences
     #################################################################
     # load SNPs
-    snps = vcf.vcf_snps(vcf_file, options.index_snp, options.score, options.genome2_fasta is not None)
+    snps = bvcf.vcf_snps(vcf_file, options.index_snp, options.score, options.genome2_fasta is not None)
 
     # get one hot coded input sequences
     if not options.genome1_fasta or not options.genome2_fasta:
-        seq_vecs, seq_headers, snps = vcf.snps_seq1(snps, options.seq_len, options.genome_fasta)
+        seq_vecs, seq_headers, snps = bvcf.snps_seq1(snps, options.seq_len, options.genome_fasta)
     else:
-        seq_vecs, seq_headers, snps = vcf.snps2_seq1(snps, options.seq_len, options.genome1_fasta, options.genome2_fasta)
+        seq_vecs, seq_headers, snps = bvcf.snps2_seq1(snps, options.seq_len, options.genome1_fasta, options.genome2_fasta)
 
     # reshape sequences for torch
     seq_vecs = seq_vecs.reshape((seq_vecs.shape[0],4,1,seq_vecs.shape[1]//4))
@@ -134,7 +134,7 @@ def main():
             sad_matrices.setdefault(snp.index_snp,[]).append(alt_sad)
 
             # label as mutation from reference
-            alt_label = '%s_%s>%s' % (snp.rsid, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al))
+            alt_label = '%s_%s>%s' % (snp.rsid, bvcf.cap_allele(snp.ref_allele), bvcf.cap_allele(alt_al))
             sad_labels.setdefault(snp.index_snp,[]).append(alt_label)
 
             # save scores
@@ -152,7 +152,7 @@ def main():
 
             # print table line(s)
             if options.dense_table:
-                cols = [snp.rsid, snp_is, snp_score, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al)]
+                cols = [snp.rsid, snp_is, snp_score, bvcf.cap_allele(snp.ref_allele), bvcf.cap_allele(alt_al)]
                 for ti in range(len(alt_sad)):
                     cols += ['%.4f'%ref_preds[ti], '%.4f'%alt_sad[ti]]
 
@@ -164,7 +164,7 @@ def main():
 
             else:
                 for ti in range(len(alt_sad)):
-                    cols = (snp.rsid, snp_is, snp_score, vcf.cap_allele(snp.ref_allele), vcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
+                    cols = (snp.rsid, snp_is, snp_score, bvcf.cap_allele(snp.ref_allele), bvcf.cap_allele(alt_al), target_labels[ti], ref_preds[ti], alt_preds[ti], alt_sad[ti])
                     if options.csv:
                         print(','.join([str(c) for c in cols]), file=sad_out)
                     else:
