@@ -22,12 +22,15 @@ cmd:text('Options:')
 cmd:option('-add_motif', '', 'Additional motif to pre-insert')
 cmd:option('-batch_size', 256, 'Maximum batch size')
 cmd:option('-cuda', false, 'Run on GPGPU')
+cmd:option('-cudnn', false, 'Run on GPGPU w/ cuDNN')
 opt = cmd:parse(arg)
 
 -- fix seed
 torch.manualSeed(1)
 
-cuda = opt.cuda
+-- set cpu/gpu
+cuda_nn = opt.cudnn
+cuda = opt.cuda or opt.cudnn
 require 'convnet'
 
 ----------------------------------------------------------------
