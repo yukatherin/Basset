@@ -551,9 +551,6 @@ end
 -- Predict targets for a new set of sequences.
 ----------------------------------------------------------------
 function ConvNet:predict_mc(Xf, mc_n, batch_size, Xtens, rc_too)
-    -- requires stochasticity
-    -- self.model:training()
-
     local bs = batch_size or self.batch_size
     local batcher
     if Xtens then

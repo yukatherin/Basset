@@ -30,6 +30,8 @@ def main():
     usage = 'usage: %prog [options] <db_file> <model_file> <test_hdf5_file>'
     parser = OptionParser(usage)
     parser.add_option('-a', dest='add_motif', default=None, help='Pre-inserted additional upstream motif')
+    parser.add_option('--cuda', dest='cuda', default=False, action='store_true', help='Run on GPGPU [Default: %default]')
+    parser.add_option('--cudnn', dest='cudnn', default=False, action='store_true', help='Run on GPGPU w/cuDNN [Default: %default]')
     parser.add_option('-d', dest='model_hdf5_file', default=None, help='Pre-computed model output as HDF5.')
     parser.add_option('-m', dest='motifs_study', default='', help='Comma-separated list of motifs to study in more detail [Default: %default]')
     parser.add_option('-o', dest='out_dir', default='.')
@@ -125,11 +127,15 @@ def main():
     #################################################################
     if options.model_hdf5_file is None:
         options.model_hdf5_file = '%s/model_out.h5' % options.out_dir
-        add_str = ''
+        opts_str = ''
         if options.add_motif is not None:
-            add_str = '-add_motif %s' % options.add_motif
+            opts_str += ' -add_motif %s' % options.add_motif
+        if options.cudnn:
+            opts_str += ' -cudnn'
+        elif options.cuda:
+            opts_str += ' -cuda'
 
-        torch_cmd = 'basset_db_predict.lua %s %s %s %s %s' % (add_str, motifs_hdf5_file, model_file, test_hdf5_file, options.model_hdf5_file)
+        torch_cmd = 'basset_db_predict.lua %s %s %s %s %s' % (opts_str, motifs_hdf5_file, model_file, test_hdf5_file, options.model_hdf5_file)
         print(torch_cmd)
         subprocess.call(torch_cmd, shell=True)
 

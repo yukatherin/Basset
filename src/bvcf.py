@@ -10,7 +10,7 @@ import pysam
 from dna_io import dna_one_hot
 
 ################################################################################
-# vcf.py
+# bvcf.py
 #
 # Methods and classes to support .vcf SNP analysis.
 ################################################################################
