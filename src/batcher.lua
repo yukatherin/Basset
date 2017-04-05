@@ -16,7 +16,11 @@ function Batcher:__init(Xf, Yf, batch_size, partial)
     end
 
     bat.batch_size = batch_size
-    bat.partial = partial or true
+    if partial == nil then
+        bat.partial = true
+    else
+        bat.partial = partial
+    end
 
     bat:reset()
 
@@ -27,7 +31,10 @@ function Batcher:next()
     local X_batch = nil
     local Y_batch = nil
 
-    if self.start + self.batch_size <= self.num_seqs or (self.partial and self.start <= self.num_seqs) then
+    -- print(self.start, self.start+self.batch_size, self.num_seqs, self.partial)
+    if self.start + self.batch_size <= self.num_seqs + 1 or (self.partial and self.start <= self.num_seqs) then
+        -- print("batch provided", self.start, self.stop)
+
         -- get data
         X_batch = self.Xf:partial({self.start,self.stop}, {1,self.init_depth}, {1,1}, {1,self.seq_len}):double()
         if self.Yf ~= nil then
@@ -37,6 +44,8 @@ function Batcher:next()
         -- update batch indexes for next
         self.start = self.start + self.batch_size
         self.stop = math.min(self.stop + self.batch_size, self.num_seqs)
+    -- else
+    --     print("no batch")
     end
 
     return X_batch, Y_batch
