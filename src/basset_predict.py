@@ -73,7 +73,7 @@ def main():
     if options.scores:
         opts_str += ' -scores'
 
-    torch_cmd = 'basset_predict.lua %s %s %s %s' % (opts_str, model_file, model_input_hdf5, out_file)
+    torch_cmd = '%s/src/basset_predict.lua %s %s %s %s' % (os.environ['BASSETDIR'],opts_str, model_file, model_input_hdf5, out_file)
     print torch_cmd
     subprocess.call(torch_cmd, shell=True)
 

@@ -110,7 +110,7 @@ def main():
             torch_opts += '-seqs'
 
         options.model_hdf5_file = '%s/model_out.h5' % options.out_dir
-        torch_cmd = 'basset_motifs_infl.lua -batch_size %d %s %s %s %s' % (options.batch_size, torch_opts, model_file, test_hdf5_file, options.model_hdf5_file)
+        torch_cmd = '%s/src/basset_motifs_infl.lua -batch_size %d %s %s %s %s' % (os.environ['BASSETDIR'],options.batch_size, torch_opts, model_file, test_hdf5_file, options.model_hdf5_file)
         subprocess.call(torch_cmd, shell=True)
 
     # load model output

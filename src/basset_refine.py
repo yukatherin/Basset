@@ -111,7 +111,7 @@ def main():
 
         # perform saturated mutagenesis
         sat_hdf5_file = '%s/satmut%d.h5' % (options.out_dir,ri)
-        torch_cmd = 'basset_sat_predict.lua %s -rc %s %s %s' % (gpgpu_str, model_file, seq_hdf5_file, sat_hdf5_file)
+        torch_cmd = '%s/src/basset_sat_predict.lua %s -rc %s %s %s' % (os.environ['BASSETDIR'],gpgpu_str, model_file, seq_hdf5_file, sat_hdf5_file)
         subprocess.call(torch_cmd, shell=True)
 
         # read results into 4 x L x T
@@ -217,7 +217,7 @@ def predict_seq(model_file, seq_1hot, gpgpu_str, out_dir):
 
     # predict
     preds_file = '%s/preds0.txt' % out_dir
-    torch_cmd = 'basset_predict.lua -rc %s %s %s %s' % (gpgpu_str, model_file, seq_hdf5_file, preds_file)
+    torch_cmd = '%s/src/basset_predict.lua -rc %s %s %s %s' % (os.environ['BASSETDIR'],gpgpu_str, model_file, seq_hdf5_file, preds_file)
     subprocess.call(torch_cmd, shell=True)
 
     # read predictions

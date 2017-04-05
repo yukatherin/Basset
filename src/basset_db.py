@@ -135,7 +135,7 @@ def main():
         elif options.cuda:
             opts_str += ' -cuda'
 
-        torch_cmd = 'basset_db_predict.lua %s %s %s %s %s' % (opts_str, motifs_hdf5_file, model_file, test_hdf5_file, options.model_hdf5_file)
+        torch_cmd = '%s/src/basset_db_predict.lua %s %s %s %s %s' % (os.environ['BASSETDIR'],opts_str, motifs_hdf5_file, model_file, test_hdf5_file, options.model_hdf5_file)
         print(torch_cmd)
         subprocess.call(torch_cmd, shell=True)
 

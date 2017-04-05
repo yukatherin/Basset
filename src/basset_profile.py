@@ -130,7 +130,8 @@ def main():
     if options.model_out_file is None:
         options.model_out_file = '%s/preds.txt' % options.out_dir
 
-        torch_cmd = 'basset_predict.lua -mc_n 10 -rc %s %s %s %s' % (gpgpu_str, model_file, model_input_hdf5, options.model_out_file)
+        # torch_cmd = 'basset_predict.lua -mc_n 20 -rc %s %s %s %s' % (gpgpu_str, model_file, model_input_hdf5, options.model_out_file)
+        torch_cmd = '%s/src/basset_predict.lua -rc %s %s %s %s' % (os.environ['BASSETDIR'],gpgpu_str, model_file, model_input_hdf5, options.model_out_file)
         print(torch_cmd)
         subprocess.call(torch_cmd, shell=True)
 
@@ -256,7 +257,8 @@ def main():
         fasta_out.close()
 
         # saturated mutagenesis
-        cmd = 'basset_sat.py %s --mc_n 10 -n 500 -o %s/satmut%d -t %s %s %s' % (gpgpu_str, options.out_dir, ni, satmut_targets, model_file, fasta_file)
+        # cmd = 'basset_sat.py %s --mc_n 20 -n 500 -o %s/satmut%d -t %s %s %s' % (gpgpu_str, options.out_dir, ni, satmut_targets, model_file, fasta_file)
+        cmd = 'basset_sat.py %s -n 500 -o %s/satmut%d -t %s %s %s' % (gpgpu_str, options.out_dir, ni, satmut_targets, model_file, fasta_file)
         subprocess.call(cmd, shell=True)
 
         # predictions and targets heat

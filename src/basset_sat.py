@@ -161,7 +161,7 @@ def main():
         elif options.cuda:
             gpgpu_str = '-cuda'
 
-        torch_cmd = 'basset_sat_predict.lua %s -rc -mc_n %d -center_nt %d %s %s %s' % (gpgpu_str, options.mc_n, options.center_nt, model_file, model_input_hdf5, options.model_hdf5_file)
+        torch_cmd = '%s/src/basset_sat_predict.lua %s -rc -mc_n %d -center_nt %d %s %s %s' % (os.environ['BASSETDIR'],gpgpu_str, options.mc_n, options.center_nt, model_file, model_input_hdf5, options.model_hdf5_file)
         print(torch_cmd)
         subprocess.call(torch_cmd, shell=True)
 
