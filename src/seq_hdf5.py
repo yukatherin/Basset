@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 from optparse import OptionParser
 import sys
 
@@ -93,13 +94,13 @@ def main():
 
     train_count = seqs.shape[0] - test_count - valid_count
     train_count = batch_round(train_count, options.batch_size)
-    print >> sys.stderr, '%d training sequences ' % train_count
+    print('%d training sequences ' % train_count, file=sys.stderr)
 
     test_count = batch_round(test_count, options.batch_size)
-    print >> sys.stderr, '%d test sequences ' % test_count
+    print('%d test sequences ' % test_count, file=sys.stderr)
 
     valid_count = batch_round(valid_count, options.batch_size)
-    print >> sys.stderr, '%d validation sequences ' % valid_count
+    print('%d validation sequences ' % valid_count, file=sys.stderr)
 
     i = 0
     train_seqs, train_targets = seqs[i:i+train_count,:], targets[i:i+train_count,:]
