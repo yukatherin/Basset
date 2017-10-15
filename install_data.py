@@ -110,7 +110,7 @@ def main():
         subprocess.call(cmd, shell=True)
 
         # make an HDF5 file
-        cmd = 'seq_hdf5.py -c -r -t 71886 -v 70000 encode_roadmap.fa encode_roadmap_act.txt encode_roadmap.h5'
+        cmd = 'python ../src/seq_hdf5.py -c -r -t 71886 -v 70000 encode_roadmap.fa encode_roadmap_act.txt encode_roadmap.h5'
         subprocess.call(cmd, shell=True)
 
 
